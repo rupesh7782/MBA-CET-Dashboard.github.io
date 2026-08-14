@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
@@ -6,7 +6,8 @@ import {
   signInAnonymously, 
   signOut, 
   onAuthStateChanged,
-  User 
+  User,
+  Auth
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -14,27 +15,52 @@ import {
   setDoc, 
   getDoc, 
   onSnapshot, 
-  collection, 
-  enableIndexedDbPersistence 
+  collection,
+  Firestore
 } from 'firebase/firestore';
-import firebaseConfigData from '../../firebase-applet-config.json';
+import configJson from '../../firebase-applet-config.json';
 
-const firebaseConfig = {
-  apiKey: firebaseConfigData.apiKey,
-  authDomain: firebaseConfigData.authDomain,
-  projectId: firebaseConfigData.projectId,
-  storageBucket: firebaseConfigData.storageBucket,
-  messagingSenderId: firebaseConfigData.messagingSenderId,
-  appId: firebaseConfigData.appId,
+const fallbackConfig = {
+  projectId: "gen-lang-client-0335069012",
+  appId: "1:988546867051:web:9915dc5abfdee351ad762e",
+  apiKey: "AIzaSyBYJa6wgBlCGPbrOzsBIN8UTs9UcHHDLj0",
+  authDomain: "gen-lang-client-0335069012.firebaseapp.com",
+  firestoreDatabaseId: "ai-studio-missionjbims2027-a7eaec7c-e9f2-4923-a3b3-897db03193b0",
+  storageBucket: "gen-lang-client-0335069012.firebasestorage.app",
+  messagingSenderId: "988546867051"
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+const mergedConfig = {
+  apiKey: configJson?.apiKey || fallbackConfig.apiKey,
+  authDomain: configJson?.authDomain || fallbackConfig.authDomain,
+  projectId: configJson?.projectId || fallbackConfig.projectId,
+  storageBucket: configJson?.storageBucket || fallbackConfig.storageBucket,
+  messagingSenderId: configJson?.messagingSenderId || fallbackConfig.messagingSenderId,
+  appId: configJson?.appId || fallbackConfig.appId,
+};
 
-export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfigData.firestoreDatabaseId || undefined);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+
+try {
+  app = !getApps().length ? initializeApp(mergedConfig) : getApps()[0];
+  auth = getAuth(app);
+  const dbId = configJson?.firestoreDatabaseId || fallbackConfig.firestoreDatabaseId;
+  db = getFirestore(app, dbId || undefined);
+} catch (error) {
+  console.warn('Firebase initialization warning:', error);
+  // Fallback if needed
+  app = getApps()[0];
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
 export const googleProvider = new GoogleAuthProvider();
 
 export {
+  auth,
+  db,
   signInWithPopup,
   signInAnonymously,
   signOut,
