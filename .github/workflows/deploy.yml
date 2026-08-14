@@ -27,13 +27,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Dependencies
-        run: npm install --include=dev --legacy-peer-deps
+        run: npm install --force --no-audit --no-fund
 
       - name: Build Application
-        run: npx vite build
+        run: |
+          npx vite build
+          cp dist/index.html dist/404.html
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
