@@ -1,0 +1,2 @@
+cat src/components/dashboard/DashboardView.tsx | awk '/const \[isAddNoteOpen, setIsAddNoteOpen\] = useState\(false\);/{print; print "\n  // State for Edit Metrics Modal\n  const [isEditMetricsOpen, setIsEditMetricsOpen] = useState(false);\n  const [editHours, setEditHours] = useState(\x27\x27);\n  const [editQuestions, setEditQuestions] = useState(\x27\x27);\n  const [editAccuracy, setEditAccuracy] = useState(\x27\x27);\n"} !/const \[isAddNoteOpen, setIsAddNoteOpen\] = useState\(false\);/' > temp.tsx
+mv temp.tsx src/components/dashboard/DashboardView.tsx

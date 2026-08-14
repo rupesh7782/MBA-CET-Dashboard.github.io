@@ -1,0 +1,277 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile details",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "tagline": { "type": "string" },
+        "targetExam": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "name"]
+    },
+    "ExamConfig": {
+      "title": "Exam Configuration",
+      "description": "User exam goal and streak configurations",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "examName": { "type": "string" },
+        "examDate": { "type": "string" },
+        "targetScore": { "type": "number" },
+        "targetPercentile": { "type": "number" },
+        "dailyStudyGoalHours": { "type": "number" },
+        "dailyQuestionsGoal": { "type": "number" },
+        "streakResetDate": { "type": "string" },
+        "currentStreakDays": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "examName"]
+    },
+    "MockTest": {
+      "title": "Mock Test",
+      "description": "Recorded mock tests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "varcScore": { "type": "number" },
+        "lrdiScore": { "type": "number" },
+        "arScore": { "type": "number" },
+        "quantScore": { "type": "number" },
+        "totalScore": { "type": "number" },
+        "maxScore": { "type": "number" },
+        "percentile": { "type": "number" },
+        "timeTakenMinutes": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "remarks": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["userId", "name", "date", "totalScore"]
+    },
+    "SectionalTest": {
+      "title": "Sectional Test",
+      "description": "Sectional practice tests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "subject": { "type": "string" },
+        "date": { "type": "string" },
+        "score": { "type": "number" },
+        "maxScore": { "type": "number" },
+        "timeTakenMinutes": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "percentile": { "type": "number" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["userId", "name", "subject", "score"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Study notes and revision snippets",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "url": { "type": "string" },
+        "subject": { "type": "string" },
+        "date": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "isPinned": { "type": "boolean" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "folder": { "type": "string" }
+      },
+      "required": ["userId", "title", "content"]
+    },
+    "ReadingItem": {
+      "title": "Reading Item",
+      "description": "Articles, editorials, and newspapers reading logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "source": { "type": "string" },
+        "content": { "type": "string" },
+        "url": { "type": "string" },
+        "date": { "type": "string" },
+        "readTimeMinutes": { "type": "number" },
+        "isBookmarked": { "type": "boolean" },
+        "isRead": { "type": "boolean" },
+        "fileUrl": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["userId", "title"]
+    },
+    "VocabWord": {
+      "title": "Vocab Word",
+      "description": "Vocabulary flashcards",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "word": { "type": "string" },
+        "pronunciation": { "type": "string" },
+        "meaning": { "type": "string" },
+        "synonyms": { "type": "array", "items": { "type": "string" } },
+        "antonyms": { "type": "array", "items": { "type": "string" } },
+        "example": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "revisionDate": { "type": "string" },
+        "masteryLevel": { "type": "number" }
+      },
+      "required": ["userId", "word", "meaning"]
+    },
+    "Formula": {
+      "title": "Formula",
+      "description": "Maths and reasoning formulas",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "formula": { "type": "string" },
+        "explanation": { "type": "string" },
+        "examples": { "type": "string" },
+        "isBookmarked": { "type": "boolean" },
+        "pdfUrl": { "type": "string" },
+        "pdfFileName": { "type": "string" }
+      },
+      "required": ["userId", "title", "formula"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "Target goals",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "text": { "type": "string" },
+        "period": { "type": "string" },
+        "category": { "type": "string" },
+        "isCompleted": { "type": "boolean" },
+        "targetDate": { "type": "string" }
+      },
+      "required": ["userId", "text", "period"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "Daily study habits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "iconName": { "type": "string" },
+        "category": { "type": "string" },
+        "currentStreak": { "type": "number" },
+        "bestStreak": { "type": "number" },
+        "completionHistory": { "type": "object" }
+      },
+      "required": ["userId", "title"]
+    },
+    "Achievement": {
+      "title": "Achievement",
+      "description": "Unlocked achievements and milestones",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "iconName": { "type": "string" },
+        "unlockedAt": { "type": ["string", "null"] },
+        "progress": { "type": "number" },
+        "target": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["userId", "title"]
+    },
+    "VaultItem": {
+      "title": "Vault Item",
+      "description": "Private encrypted vault items",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "secretContent": { "type": "string" },
+        "urlOrFilename": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "title"]
+    },
+    "DailyStudyLog": {
+      "title": "Daily Study Log",
+      "description": "Daily logged study hours, questions, and accuracy",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "hoursStudied": { "type": "number" },
+        "questionsSolved": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "date", "hoursStudied"]
+    },
+    "TimerSession": {
+      "title": "Timer Session",
+      "description": "Completed study timer sessions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "mode": { "type": "string" },
+        "subject": { "type": "string" }
+      },
+      "required": ["userId", "timestamp", "durationMinutes"]
+    },
+    "UserAppState": {
+      "title": "User App State Backup",
+      "description": "Consolidated user state sync for lightning cloud restore",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "data": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "data"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/userState/sync": {
+      "schema": "UserAppState",
+      "description": "Consolidated app state sync document"
+    },
+    "/users/{userId}/mockTests/{mockId}": {
+      "schema": "MockTest",
+      "description": "User mock test results"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "Note",
+      "description": "User notes"
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "User study goals"
+    },
+    "/users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "User habits"
+    },
+    "/users/{userId}/dailyLogs/{logId}": {
+      "schema": "DailyStudyLog",
+      "description": "Daily study history logs"
+    }
+  }
+}

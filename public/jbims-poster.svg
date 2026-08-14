@@ -1,0 +1,394 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" width="100%" height="100%">
+  <defs>
+    <!-- Background Radial Vignette -->
+    <radialGradient id="bgGlow" cx="25%" cy="22%" r="85%">
+      <stop offset="0%" stop-color="#ffb700" stop-opacity="0.35"/>
+      <stop offset="25%" stop-color="#8a1400" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#0e0402" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#030101" stop-opacity="1"/>
+    </radialGradient>
+
+    <!-- Metallic Gold 3D Text Gradient -->
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="18%" stop-color="#FFF5B8"/>
+      <stop offset="45%" stop-color="#FFD700"/>
+      <stop offset="75%" stop-color="#D49400"/>
+      <stop offset="100%" stop-color="#734D00"/>
+    </linearGradient>
+
+    <!-- Subtitle Gold Gradient -->
+    <linearGradient id="goldSubtitle" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFC800"/>
+      <stop offset="50%" stop-color="#FFF3B8"/>
+      <stop offset="100%" stop-color="#FFC800"/>
+    </linearGradient>
+
+    <!-- Sunlight Burst Radial Gradient -->
+    <radialGradient id="sunburst" cx="14%" cy="24%" r="42%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset="15%" stop-color="#FFE875" stop-opacity="0.85"/>
+      <stop offset="35%" stop-color="#FF8C00" stop-opacity="0.45"/>
+      <stop offset="65%" stop-color="#D92B00" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#FF0000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Red Building Facade Gradient -->
+    <linearGradient id="redFacade" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#C22727"/>
+      <stop offset="50%" stop-color="#9E1B1B"/>
+      <stop offset="100%" stop-color="#6B0E0E"/>
+    </linearGradient>
+
+    <!-- Pillar 3D Lighting Gradient -->
+    <linearGradient id="pillarRed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#590A0A"/>
+      <stop offset="35%" stop-color="#A81D1D"/>
+      <stop offset="70%" stop-color="#C22727"/>
+      <stop offset="100%" stop-color="#4A0808"/>
+    </linearGradient>
+
+    <!-- Vignette Overlays -->
+    <linearGradient id="vignetteTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#030101" stop-opacity="1"/>
+      <stop offset="55%" stop-color="#030101" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#030101" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="vignetteBottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#030101" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#030101" stop-opacity="0.80"/>
+      <stop offset="100%" stop-color="#030101" stop-opacity="1"/>
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="heavyShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.95"/>
+    </filter>
+
+    <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#FFC800" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <!-- BASE DARK CANVAS -->
+  <rect width="900" height="1200" fill="#030101"/>
+  <rect width="900" height="1200" fill="url(#bgGlow)"/>
+
+  <!-- ========================================== -->
+  <!-- CENTER ARTWORK: JBIMS RED HERITAGE CAMPUS  -->
+  <!-- ========================================== -->
+  <g id="jbimsBuilding" transform="translate(0, 250)">
+    
+    <!-- Main Red Brick Building Structure -->
+    <rect x="60" y="20" width="780" height="660" rx="4" fill="url(#redFacade)"/>
+    
+    <!-- Horizontal Brick Shadow Lines -->
+    <g stroke="#540B0B" stroke-width="2" opacity="0.6">
+      <line x1="60" y1="80" x2="840" y2="80"/>
+      <line x1="60" y1="160" x2="840" y2="160"/>
+      <line x1="60" y1="240" x2="840" y2="240"/>
+      <line x1="60" y1="320" x2="840" y2="320"/>
+      <line x1="60" y1="400" x2="840" y2="400"/>
+      <line x1="60" y1="480" x2="840" y2="480"/>
+    </g>
+
+    <!-- BUILDING WINDOWS MATRIX (4 FLOORS x 5 COLUMNS) -->
+    <!-- Window Recesses & White Louvers -->
+    <!-- Floor 4 -->
+    <g fill="#120404" stroke="#7A1212" stroke-width="2">
+      <rect x="95" y="45" width="125" height="48" rx="2"/>
+      <rect x="245" y="45" width="125" height="48" rx="2"/>
+      <rect x="395" y="45" width="125" height="48" rx="2"/>
+      <rect x="545" y="45" width="125" height="48" rx="2"/>
+      <rect x="695" y="45" width="125" height="48" rx="2"/>
+    </g>
+    <!-- Floor 4 White Louvers/Shutters -->
+    <g fill="#EDEDED" filter="url(#heavyShadow)">
+      <polygon points="90,40 225,40 220,50 95,50"/>
+      <polygon points="240,40 375,40 370,50 245,50"/>
+      <polygon points="390,40 525,40 520,50 395,50"/>
+      <polygon points="540,40 675,40 670,50 545,50"/>
+      <polygon points="690,40 825,40 820,50 695,50"/>
+    </g>
+
+    <!-- Floor 3 -->
+    <g fill="#120404" stroke="#7A1212" stroke-width="2">
+      <rect x="95" y="125" width="125" height="48" rx="2"/>
+      <rect x="245" y="125" width="125" height="48" rx="2"/>
+      <rect x="395" y="125" width="125" height="48" rx="2"/>
+      <rect x="545" y="125" width="125" height="48" rx="2"/>
+      <rect x="695" y="125" width="125" height="48" rx="2"/>
+    </g>
+    <!-- Floor 3 White Louvers -->
+    <g fill="#EDEDED" filter="url(#heavyShadow)">
+      <polygon points="90,120 225,120 220,130 95,130"/>
+      <polygon points="240,120 375,120 370,130 245,130"/>
+      <polygon points="390,120 525,120 520,130 395,130"/>
+      <polygon points="540,120 675,120 670,130 545,130"/>
+      <polygon points="690,120 825,120 820,130 695,130"/>
+    </g>
+
+    <!-- Floor 2 -->
+    <g fill="#120404" stroke="#7A1212" stroke-width="2">
+      <rect x="95" y="205" width="125" height="48" rx="2"/>
+      <rect x="245" y="205" width="125" height="48" rx="2"/>
+      <rect x="395" y="205" width="125" height="48" rx="2"/>
+      <rect x="545" y="205" width="125" height="48" rx="2"/>
+      <rect x="695" y="205" width="125" height="48" rx="2"/>
+    </g>
+    <!-- Floor 2 White Louvers -->
+    <g fill="#EDEDED" filter="url(#heavyShadow)">
+      <polygon points="90,200 225,200 220,210 95,210"/>
+      <polygon points="240,200 375,200 370,210 245,210"/>
+      <polygon points="390,200 525,200 520,210 395,210"/>
+      <polygon points="540,200 675,200 670,210 545,210"/>
+      <polygon points="690,200 825,200 820,210 695,210"/>
+    </g>
+
+    <!-- Floor 1 -->
+    <g fill="#120404" stroke="#7A1212" stroke-width="2">
+      <rect x="95" y="285" width="125" height="48" rx="2"/>
+      <rect x="245" y="285" width="125" height="48" rx="2"/>
+      <rect x="395" y="285" width="125" height="48" rx="2"/>
+      <rect x="545" y="285" width="125" height="48" rx="2"/>
+      <rect x="695" y="285" width="125" height="48" rx="2"/>
+    </g>
+    <g fill="#EDEDED" filter="url(#heavyShadow)">
+      <polygon points="90,280 225,280 220,290 95,290"/>
+      <polygon points="240,280 375,280 370,290 245,290"/>
+      <polygon points="390,280 525,280 520,290 395,290"/>
+      <polygon points="540,280 675,280 670,290 545,290"/>
+      <polygon points="690,280 825,280 820,290 695,290"/>
+    </g>
+
+    <!-- MAIN GROUND ENTRANCE VOID & LIGHTED HALLWAY -->
+    <rect x="290" y="380" width="320" height="300" fill="#080202"/>
+    <!-- Recessed interior light grid -->
+    <g opacity="0.6">
+      <rect x="340" y="440" width="220" height="8" fill="#FFF2A3"/>
+      <rect x="350" y="480" width="200" height="6" fill="#FFF2A3"/>
+      <rect x="360" y="520" width="180" height="5" fill="#FFE066"/>
+      <path d="M290 680 L350 560 L550 560 L610 680 Z" fill="#1C1812" opacity="0.8"/>
+    </g>
+
+    <!-- Thicker Circular Red Pillars Framing Entrance -->
+    <rect x="270" y="370" width="40" height="310" rx="4" fill="url(#pillarRed)" stroke="#3D0606" stroke-width="2"/>
+    <rect x="590" y="370" width="40" height="310" rx="4" fill="url(#pillarRed)" stroke="#3D0606" stroke-width="2"/>
+
+    <!-- Left & Right Red Brick Annex Walls with Plaques -->
+    <!-- Left Plaque -->
+    <g transform="translate(160, 480)" filter="url(#heavyShadow)">
+      <rect x="0" y="0" width="95" height="40" rx="3" fill="#DCE9F5" stroke="#2B4C6F" stroke-width="1.5"/>
+      <text x="47.5" y="16" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="9" fill="#1A334E">हृ. म. वावेकर</text>
+      <text x="47.5" y="30" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="10" fill="#1A334E">सभागृह →</text>
+    </g>
+    <!-- Right Plaque -->
+    <g transform="translate(645, 480)" filter="url(#heavyShadow)">
+      <rect x="0" y="0" width="95" height="50" rx="3" fill="#D9C7A2" stroke="#6E562A" stroke-width="1.5"/>
+      <text x="47.5" y="15" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="8" fill="#3B2A10">JBIMS</text>
+      <text x="47.5" y="27" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="8" fill="#3B2A10">Bajaj Bhavan</text>
+      <text x="47.5" y="38" text-anchor="middle" font-family="sans-serif" font-weight="500" font-size="7" fill="#523E1C">Established 1965</text>
+    </g>
+
+    <!-- Potted Green Plants at Base -->
+    <g fill="#A66738" stroke="#5E381A" stroke-width="1.5">
+      <ellipse cx="150" cy="640" rx="20" ry="12"/>
+      <path d="M135 640 L165 640 L160 670 L140 670 Z"/>
+      <!-- Green Leaves -->
+      <path d="M150 635 C130 600 120 620 135 635 M150 635 C170 600 180 620 165 635 M150 635 C150 590 160 600 150 635" fill="#2E5E1C" stroke="#1A380E"/>
+
+      <ellipse cx="750" cy="640" rx="20" ry="12"/>
+      <path d="M735 640 L765 640 L760 670 L740 670 Z"/>
+      <path d="M750 635 C730 600 720 620 735 635 M750 635 C770 600 780 620 765 635 M750 635 C750 590 760 600 750 635" fill="#2E5E1C" stroke="#1A380E"/>
+    </g>
+
+    <!-- ========================================== -->
+    <!-- GRAND JBIMS RED PORTICO & SIGNBOARD        -->
+    <!-- ========================================== -->
+    <g transform="translate(180, 340)" filter="url(#heavyShadow)">
+      <!-- Main Red Sign Board Container -->
+      <rect x="0" y="0" width="540" height="125" rx="8" fill="#5E0909" stroke="#FFC800" stroke-width="2.5"/>
+      <rect x="4" y="4" width="532" height="117" rx="6" fill="none" stroke="#8A1212" stroke-width="1.5"/>
+
+      <!-- JBIMS Crest Shield Emblem on Left -->
+      <g transform="translate(24, 15)">
+        <rect x="0" y="0" width="68" height="92" rx="6" fill="#800D0D" stroke="#FFF" stroke-width="1.5"/>
+        <path d="M10 20 L58 20 L58 76 L34 86 L10 76 Z" fill="#991212" stroke="#FFC800" stroke-width="1.2"/>
+        <text x="34" y="14" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="900" font-size="10" fill="#FFF">JBIMS</text>
+        <!-- Sunburst Torch Emblem -->
+        <circle cx="34" cy="42" r="14" fill="#FFC800"/>
+        <path d="M34 26 L34 58 M18 42 L50 42 M22 30 L46 54 M22 54 L46 30" stroke="#800D0D" stroke-width="2.2"/>
+      </g>
+
+      <!-- English & Hindi Sign Board Typography -->
+      <g transform="translate(108, 0)">
+        <text x="200" y="34" text-anchor="middle" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="22" fill="#FFFFFF" letter-spacing="1">
+          JAMNALAL BAJAJ
+        </text>
+        <text x="200" y="55" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="800" font-size="13.5" fill="#FFE066" letter-spacing="0.5">
+          INSTITUTE OF MANAGEMENT STUDIES
+        </text>
+        
+        <line x1="25" y1="65" x2="375" y2="65" stroke="#FFC800" stroke-width="1.2" opacity="0.65"/>
+
+        <text x="200" y="89" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="20" fill="#FFFFFF">
+          जमनालाल बजाज
+        </text>
+        <text x="200" y="109" text-anchor="middle" font-family="sans-serif" font-weight="600" font-size="12.5" fill="#FFD700">
+          व्यवस्थापन शिक्षण संस्था
+        </text>
+      </g>
+    </g>
+
+    <!-- Vintage Wrought Iron Entrance Gates (Left & Right) -->
+    <!-- Vintage Street Lamps -->
+    <g fill="#111" stroke="#FFC800" stroke-width="1.2" filter="url(#heavyShadow)">
+      <!-- Left Lamp -->
+      <polygon points="50,510 75,488 100,510 90,560 60,560" fill="#FFF5B8" opacity="0.85"/>
+      <rect x="70" y="560" width="10" height="120" fill="#181818"/>
+      
+      <!-- Right Lamp -->
+      <polygon points="800,510 825,488 850,510 840,560 810,560" fill="#FFF5B8" opacity="0.85"/>
+      <rect x="820" y="560" width="10" height="120" fill="#181818"/>
+    </g>
+
+    <!-- Black Gate Bars -->
+    <g stroke="#1A1A1A" stroke-width="3.5" opacity="0.95">
+      <!-- Left Gate -->
+      <line x1="20" y1="520" x2="20" y2="680"/>
+      <line x1="40" y1="520" x2="40" y2="680"/>
+      <line x1="60" y1="520" x2="60" y2="680"/>
+      <line x1="80" y1="520" x2="80" y2="680"/>
+      <line x1="100" y1="520" x2="100" y2="680"/>
+      <line x1="10" y1="540" x2="110" y2="540"/>
+      <line x1="10" y1="600" x2="110" y2="600"/>
+      <line x1="10" y1="660" x2="110" y2="660"/>
+
+      <!-- Right Gate -->
+      <line x1="800" y1="520" x2="800" y2="680"/>
+      <line x1="820" y1="520" x2="820" y2="680"/>
+      <line x1="840" y1="520" x2="840" y2="680"/>
+      <line x1="860" y1="520" x2="860" y2="680"/>
+      <line x1="880" y1="520" x2="880" y2="680"/>
+      <line x1="790" y1="540" x2="890" y2="540"/>
+      <line x1="790" y1="600" x2="890" y2="600"/>
+      <line x1="790" y1="660" x2="890" y2="660"/>
+    </g>
+
+    <!-- Trees Silhouettes framing sides -->
+    <path d="M0 80 Q70 30 120 140 Q150 240 90 380 Q30 480 0 580 Z" fill="#183610" opacity="0.88"/>
+    <path d="M900 80 Q830 30 780 140 Q750 240 810 380 Q870 480 900 580 Z" fill="#183610" opacity="0.88"/>
+
+  </g>
+
+  <!-- OVERLAY VIGNETTE GRADIENTS -->
+  <rect x="0" y="0" width="900" height="400" fill="url(#vignetteTop)"/>
+  <rect x="0" y="720" width="900" height="480" fill="url(#vignetteBottom)"/>
+
+  <!-- ========================================== -->
+  <!-- SUNLIGHT LENS FLARE (Top-Left Roofline)    -->
+  <!-- ========================================== -->
+  <circle cx="125" cy="275" r="370" fill="url(#sunburst)"/>
+  <ellipse cx="125" cy="275" rx="550" ry="7" fill="#FFF2A3" opacity="0.4" transform="rotate(-18 125 275)"/>
+  <ellipse cx="125" cy="275" rx="420" ry="12" fill="#FFC800" opacity="0.3" transform="rotate(22 125 275)"/>
+
+  <!-- GOLD DUST PARTICLES -->
+  <g opacity="0.5">
+    <circle cx="150" cy="130" r="2.5" fill="#FFE066"/>
+    <circle cx="280" cy="85" r="1.5" fill="#FFF"/>
+    <circle cx="740" cy="150" r="2" fill="#FFE066"/>
+    <circle cx="820" cy="230" r="2.5" fill="#FFF"/>
+    <circle cx="100" cy="360" r="2" fill="#FFE066"/>
+    <circle cx="850" cy="460" r="2" fill="#FFE066"/>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- TOP HEADER METALLIC GOLD TYPOGRAPHY       -->
+  <!-- ========================================== -->
+  <g filter="url(#heavyShadow)">
+    <!-- Subtitle 1: NO BACKUP PLAN -->
+    <text x="450" y="85" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="24" fill="#FFC800" letter-spacing="10">
+      NO BACKUP PLAN
+    </text>
+
+    <!-- Main Title: ONLY JBIMS -->
+    <text x="450" y="190" text-anchor="middle" font-family="'Impact', 'Arial Black', sans-serif" font-weight="900" font-size="118" fill="url(#goldMetallic)" letter-spacing="4" filter="url(#goldGlow)">
+      ONLY JBIMS
+    </text>
+
+    <!-- Subtitle 2: 99.99 PERCENTILE -->
+    <text x="450" y="250" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="38" fill="url(#goldSubtitle)" letter-spacing="7">
+      99.99 PERCENTILE
+    </text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- FOOTER: 5 GOLDEN PILLARS & CURSIVE MOTTO   -->
+  <!-- ========================================== -->
+  <g transform="translate(0, 990)" filter="url(#heavyShadow)">
+    
+    <!-- 5 Golden Pillars Grid -->
+    <!-- Pillar 1: FOCUS -->
+    <g transform="translate(90, 0)">
+      <circle cx="30" cy="20" r="16" fill="none" stroke="#FFC800" stroke-width="2.5"/>
+      <circle cx="30" cy="20" r="10" fill="none" stroke="#FFC800" stroke-width="2"/>
+      <circle cx="30" cy="20" r="4" fill="#FFC800"/>
+      <text x="30" y="56" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="15" fill="#FFE066" letter-spacing="1">
+        FOCUS
+      </text>
+    </g>
+
+    <!-- Pillar 2: DISCIPLINE -->
+    <g transform="translate(255, 0)">
+      <path d="M12 30 L24 18 L34 26 L48 10" fill="none" stroke="#FFC800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M38 10 L48 10 L48 20" fill="none" stroke="#FFC800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="56" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="15" fill="#FFE066" letter-spacing="1">
+        DISCIPLINE
+      </text>
+    </g>
+
+    <!-- Pillar 3: HARD WORK -->
+    <g transform="translate(420, 0)">
+      <path d="M12 12 C18 10 26 12 30 15 C34 12 42 10 48 12 L48 32 C42 30 34 32 30 35 C26 32 18 30 12 32 Z" fill="none" stroke="#FFC800" stroke-width="2.5"/>
+      <line x1="30" y1="15" x2="30" y2="35" stroke="#FFC800" stroke-width="2.5"/>
+      <text x="30" y="56" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="15" fill="#FFE066" letter-spacing="1">
+        HARD WORK
+      </text>
+    </g>
+
+    <!-- Pillar 4: CONSISTENCY -->
+    <g transform="translate(585, 0)">
+      <path d="M18 12 L42 12 L40 26 C38 31 32 34 30 34 C28 34 22 31 20 26 Z" fill="none" stroke="#FFC800" stroke-width="2.5"/>
+      <path d="M18 15 C13 15 13 22 18 22 M42 15 C47 15 47 22 42 22" fill="none" stroke="#FFC800" stroke-width="2"/>
+      <path d="M30 34 L30 40 M22 40 L38 40" stroke="#FFC800" stroke-width="2.5"/>
+      <text x="30" y="56" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="15" fill="#FFE066" letter-spacing="1">
+        CONSISTENCY
+      </text>
+    </g>
+
+    <!-- Pillar 5: SUCCESS -->
+    <g transform="translate(750, 0)">
+      <path d="M18 38 L18 10 L42 18 L18 26" fill="none" stroke="#FFC800" stroke-width="2.5" stroke-linejoin="round"/>
+      <line x1="12" y1="38" x2="24" y2="38" stroke="#FFC800" stroke-width="2.5"/>
+      <text x="30" y="56" text-anchor="middle" font-family="'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="15" fill="#FFE066" letter-spacing="1">
+        SUCCESS
+      </text>
+    </g>
+
+    <!-- GOLD ACCENT HORIZONTAL LINE WITH CENTRAL FLARE -->
+    <g transform="translate(0, 92)">
+      <line x1="75" y1="0" x2="825" y2="0" stroke="#FFC800" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="450" cy="0" r="4" fill="#FFFFFF"/>
+      <ellipse cx="450" cy="0" rx="42" ry="2.5" fill="#FFC800" opacity="0.9"/>
+    </g>
+
+    <!-- SLOGAN IN ELEGANT CURSIVE CALLIGRAPHY -->
+    <text x="450" y="142" text-anchor="middle" font-family="'Playfair Display', 'Georgia', 'Brush Script MT', serif" font-style="italic" font-weight="bold" font-size="32" fill="url(#goldMetallic)" letter-spacing="2">
+      One Attempt. One Dream. One College.
+    </text>
+  </g>
+
+  <!-- Outer Frame -->
+  <rect x="3" y="3" width="894" height="1194" rx="28" fill="none" stroke="#FFC800" stroke-width="3" opacity="0.8"/>
+</svg>

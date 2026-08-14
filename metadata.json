@@ -1,0 +1,6 @@
+{
+  "name": "MISSION JBIMS 2027",
+  "description": "A premium productivity operating system built specifically for MBA entrance exam aspirants targeting JBIMS with study tracking, mock test analytics, vocabulary flashcards, reading materials, PDF library, formula book, habits, goals, vault, and study timer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
