@@ -272,12 +272,12 @@ export const WeeklyProgressWidget: React.FC = () => {
       </div>
 
       {/* WEEKLY MATRIX TABLE CONTAINER */}
-      <div className="mt-6 overflow-x-auto pb-2">
-        <div className="min-w-[780px] bg-[#030304] border border-[#1d1d24] rounded-2xl overflow-hidden shadow-inner">
+      <div className="mt-6 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-amber-500/20">
+        <div className="min-w-[760px] bg-[#030304] border border-[#1d1d24] rounded-2xl overflow-hidden shadow-inner">
           
           {/* DAY HEADERS ROW */}
-          <div className="grid grid-cols-8 border-b border-[#1d1d24] bg-[#0a0a0d]">
-            <div className="p-3 text-[11px] font-bold text-gray-500 uppercase flex items-center justify-center border-r border-[#1d1d24] whitespace-nowrap">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] border-b border-[#1d1d24] bg-[#0a0a0d]">
+            <div className="p-3 text-[11px] font-bold text-gray-500 uppercase flex items-center justify-center border-r border-[#1d1d24]">
               {/* Top left blank header cell */}
             </div>
             {processedDays.map((d) => (
@@ -326,10 +326,10 @@ export const WeeklyProgressWidget: React.FC = () => {
           </div>
 
           {/* ROW 1: STUDY DAYS */}
-          <div className="grid grid-cols-8 border-b border-[#1d1d24] items-center">
-            <div className="p-3.5 flex items-center space-x-2 border-r border-[#1d1d24] bg-[#070709] whitespace-nowrap min-w-[150px]">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] border-b border-[#1d1d24] items-center">
+            <div className="p-3.5 flex items-center space-x-2.5 border-r border-[#1d1d24] bg-[#070709]">
               <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                 STUDY DAYS
               </span>
             </div>
@@ -340,12 +340,12 @@ export const WeeklyProgressWidget: React.FC = () => {
                 className="p-3.5 flex items-center justify-center border-r border-[#1d1d24] last:border-r-0 hover:bg-white/5 transition-colors group"
               >
                 {d.isStudied ? (
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border shadow-lg transition-transform group-hover:scale-110 ${
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center border shadow-lg transition-transform group-hover:scale-110 ${
                     d.isWeekend 
                       ? 'bg-amber-500/20 border-amber-400 text-amber-400 shadow-amber-500/30' 
                       : 'bg-emerald-500/20 border-emerald-400 text-emerald-400 shadow-emerald-500/30'
                   }`}>
-                    <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                    <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                   </div>
                 ) : (
                   <span className="text-gray-600 font-bold text-xs group-hover:text-amber-400 transition-colors">+ Add</span>
@@ -355,10 +355,10 @@ export const WeeklyProgressWidget: React.FC = () => {
           </div>
 
           {/* ROW 2: STUDY HOURS */}
-          <div className="grid grid-cols-8 border-b border-[#1d1d24] items-center">
-            <div className="p-3.5 flex items-center space-x-2 border-r border-[#1d1d24] bg-[#070709] whitespace-nowrap min-w-[150px]">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] border-b border-[#1d1d24] items-center">
+            <div className="p-3.5 flex items-center space-x-2.5 border-r border-[#1d1d24] bg-[#070709]">
               <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                 STUDY HOURS
               </span>
             </div>
@@ -378,10 +378,10 @@ export const WeeklyProgressWidget: React.FC = () => {
           </div>
 
           {/* ROW 3: QUESTIONS SOLVED */}
-          <div className="grid grid-cols-8 border-b border-[#1d1d24] items-center">
-            <div className="p-3.5 flex items-center space-x-2 border-r border-[#1d1d24] bg-[#070709] whitespace-nowrap min-w-[150px]">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] border-b border-[#1d1d24] items-center">
+            <div className="p-3.5 flex items-center space-x-2.5 border-r border-[#1d1d24] bg-[#070709]">
               <BookOpen className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                 QUESTIONS SOLVED
               </span>
             </div>
@@ -401,10 +401,10 @@ export const WeeklyProgressWidget: React.FC = () => {
           </div>
 
           {/* ROW 4: ACCURACY */}
-          <div className="grid grid-cols-8 border-b border-[#1d1d24] items-center">
-            <div className="p-3.5 flex items-center space-x-2 border-r border-[#1d1d24] bg-[#070709] whitespace-nowrap min-w-[150px]">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] border-b border-[#1d1d24] items-center">
+            <div className="p-3.5 flex items-center space-x-2.5 border-r border-[#1d1d24] bg-[#070709]">
               <Target className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                 ACCURACY
               </span>
             </div>
@@ -426,10 +426,10 @@ export const WeeklyProgressWidget: React.FC = () => {
           </div>
 
           {/* ROW 5: MOCK TESTS */}
-          <div className="grid grid-cols-8 items-center">
-            <div className="p-3.5 flex items-center space-x-2 border-r border-[#1d1d24] bg-[#070709] whitespace-nowrap min-w-[150px]">
+          <div className="grid grid-cols-[180px_repeat(7,minmax(75px,1fr))] items-center">
+            <div className="p-3.5 flex items-center space-x-2.5 border-r border-[#1d1d24] bg-[#070709]">
               <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[11px] font-extrabold text-gray-300 uppercase tracking-wider whitespace-nowrap">
                 MOCK TESTS
               </span>
             </div>
