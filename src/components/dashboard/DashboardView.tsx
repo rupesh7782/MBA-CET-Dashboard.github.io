@@ -10,7 +10,7 @@ import {
   Clock, CheckCircle2, Target, Trophy, Flame, 
   FileText, Plus, ArrowRight, Trash2, Pin, Sparkles, Edit3, 
   Play, Pause, RotateCcw, Settings, FileEdit, Upload, 
-  LineChart as LineChartIcon, Timer as TimerIcon, Calendar
+  LineChart as LineChartIcon, Timer as TimerIcon, Calendar, CalendarCheck
 } from 'lucide-react';
 import { Subject } from '../../types';
 import { DailyMotivationWidget } from './DailyMotivationWidget';
@@ -29,6 +29,7 @@ export const DashboardView: React.FC = () => {
     dailyLogs,
     updateTodayLog, 
     examConfig, 
+    updateExamConfig,
     setActiveTab,
     currentStreak,
     userProfile,
@@ -43,6 +44,95 @@ export const DashboardView: React.FC = () => {
   const [editHours, setEditHours] = useState("");
   const [editQuestions, setEditQuestions] = useState("");
   const [editAccuracy, setEditAccuracy] = useState("");
+
+  // State for Edit Today's Target Modal
+  const [isEditTargetModalOpen, setIsEditTargetModalOpen] = useState(false);
+  const [targetHInput, setTargetHInput] = useState(5);
+  const [targetMInput, setTargetMInput] = useState(0);
+  const [completedHInput, setCompletedHInput] = useState(0);
+  const [completedMInput, setCompletedMInput] = useState(0);
+
+  // State for Mock Performance Trend Widget (Realtime & Editable)
+  const [isEditMockTrendOpen, setIsEditMockTrendOpen] = useState(false);
+  const [isQuickAddMockOpen, setIsQuickAddMockOpen] = useState(false);
+  const [quickMockName, setQuickMockName] = useState('');
+  const [quickMockMarks, setQuickMockMarks] = useState<string>('');
+
+  const [mockTrendList, setMockTrendList] = useState<Array<{ id: string; name: string; score: number }>>(() => {
+    try {
+      const saved = localStorage.getItem('mba_cet_mock_trend_v2');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: '1', name: 'Mock 1', score: 68.1 },
+      { id: '2', name: 'Mock 2', score: 72.4 },
+      { id: '3', name: 'Mock 3', score: 78.6 },
+      { id: '4', name: 'Mock 4', score: 86.2 },
+      { id: '5', name: 'Mock 5', score: 91.2 },
+    ];
+  });
+  const [tempMockTrend, setTempMockTrend] = useState<Array<{ id: string; name: string; score: number }>>([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mba_cet_mock_trend_v2', JSON.stringify(mockTrendList));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [mockTrendList]);
+
+  const openEditMockTrendModal = () => {
+    setTempMockTrend(JSON.parse(JSON.stringify(mockTrendList)));
+    setIsEditMockTrendOpen(true);
+  };
+
+  const openQuickAddMockModal = () => {
+    setQuickMockName(`Mock ${mockTrendList.length + 1}`);
+    const lastScore = mockTrendList.length > 0 ? mockTrendList[mockTrendList.length - 1].score : 75;
+    setQuickMockMarks(String(lastScore));
+    setIsQuickAddMockOpen(true);
+  };
+
+  const handleQuickAddMockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseFloat(quickMockMarks);
+    if (isNaN(parsed)) return;
+    const newEntry = {
+      id: `mock-${Date.now()}`,
+      name: quickMockName.trim() || `Mock ${mockTrendList.length + 1}`,
+      score: Math.min(200, Math.max(0, parsed))
+    };
+    setMockTrendList(prev => [...prev, newEntry]);
+    setIsQuickAddMockOpen(false);
+  };
+
+  const handleSaveMockTrend = (e: React.FormEvent) => {
+    e.preventDefault();
+    setMockTrendList(tempMockTrend);
+    setIsEditMockTrendOpen(false);
+  };
+
+  const handleSyncFromRecordedMocks = () => {
+    const completed = mockTests.filter(m => m.status === 'Completed');
+    if (completed.length > 0) {
+      const last5 = completed.slice(-5);
+      const synced = last5.map((m, idx) => ({
+        id: m.id || String(idx + 1),
+        name: `Mock ${idx + 1}`,
+        score: Number(m.totalScore ?? m.percentile ?? 0)
+      }));
+      while (synced.length < 5) {
+        synced.push({
+          id: `m-extra-${synced.length + 1}`,
+          name: `Mock ${synced.length + 1}`,
+          score: synced.length > 0 ? synced[synced.length - 1].score : 70
+        });
+      }
+      setTempMockTrend(synced);
+    }
+  };
 
   // Today's Tasks interactive state with localStorage persistence
   const [tasks, setTasks] = useState<{ id: number; text: string; completed: boolean }[]>(() => {
@@ -233,6 +323,32 @@ export const DashboardView: React.FC = () => {
     e.preventDefault();
     updateTodayLog(Number(editHours), Number(editQuestions), Number(editAccuracy));
     setIsEditMetricsOpen(false);
+  };
+
+  const openEditTargetModal = () => {
+    const targetHours = examConfig.dailyStudyGoalHours ?? 5;
+    setTargetHInput(Math.floor(targetHours));
+    setTargetMInput(Math.round((targetHours % 1) * 60));
+
+    const completedHours = todayLog.hoursStudied ?? 0;
+    setCompletedHInput(Math.floor(completedHours));
+    setCompletedMInput(Math.round((completedHours % 1) * 60));
+
+    setIsEditTargetModalOpen(true);
+  };
+
+  const handleSaveTargetModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalTarget = Math.max(0.1, Number(targetHInput || 0) + Number(targetMInput || 0) / 60);
+    const finalCompleted = Math.max(0, Number(completedHInput || 0) + Number(completedMInput || 0) / 60);
+
+    updateExamConfig({ dailyStudyGoalHours: Number(finalTarget.toFixed(2)) });
+    updateTodayLog(
+      Number(finalCompleted.toFixed(2)), 
+      todayLog.questionsSolved || 0, 
+      todayLog.accuracy || 0
+    );
+    setIsEditTargetModalOpen(false);
   };
 
   // Chart Data: Weekly Study Time (Last 7 Days from logs)
@@ -936,6 +1052,389 @@ export const DashboardView: React.FC = () => {
             </button>
           </div>
 
+          {/* Widget 4: Today's Target Card (Realtime & Editable) */}
+          <div className="bg-[#07090e] border border-blue-500/20 hover:border-blue-500/40 rounded-3xl p-5 transition-all duration-300 shadow-2xl relative overflow-hidden group">
+            {/* Top Glow Ambient */}
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header: Title */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
+                TODAY'S TARGET
+              </span>
+            </div>
+
+            {(() => {
+              const targetHours = examConfig.dailyStudyGoalHours ?? 5;
+              const completedHours = todayLog.hoursStudied ?? 0;
+              const remainingHours = Math.max(0, targetHours - completedHours);
+              const progressPct = targetHours > 0 ? Math.min(100, Math.max(0, (completedHours / targetHours) * 100)) : 0;
+
+              const targetH = Math.floor(targetHours);
+              const targetM = Math.round((targetHours % 1) * 60);
+              const targetStr = `${targetH}h ${targetM.toString().padStart(2, '0')}m`;
+
+              const completedH = Math.floor(completedHours);
+              const completedM = Math.round((completedHours % 1) * 60);
+              const completedStr = `${completedH}h ${completedM.toString().padStart(2, '0')}m`;
+
+              const remainingH = Math.floor(remainingHours);
+              const remainingM = Math.round((remainingHours % 1) * 60);
+              const remainingStr = `${remainingH}h ${remainingM.toString().padStart(2, '0')}m`;
+
+              return (
+                <div>
+                  {/* Target Display: Clock Icon + Hours (Clickable) */}
+                  <div 
+                    onClick={openEditTargetModal}
+                    className="flex items-center space-x-4 mb-5 cursor-pointer group/target p-1.5 -m-1.5 rounded-2xl hover:bg-blue-500/5 transition-colors"
+                    title="Click to edit study target"
+                  >
+                    <div className="w-13 h-13 rounded-full bg-blue-500/10 border border-blue-500/40 group-hover/target:border-blue-400 flex items-center justify-center text-blue-400 flex-shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.25)] transition-all">
+                      <Clock className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-400 font-medium block">
+                        Today's Study Target
+                      </span>
+                      <div className="text-2xl font-black text-blue-400 group-hover/target:text-blue-300 tracking-tight font-mono leading-none my-1 flex items-center gap-1.5">
+                        <span>{targetStr}</span>
+                      </div>
+                      <span className="text-xs text-gray-400 block font-medium">
+                        of focused study
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Segmented Progress Bar */}
+                  <div className="w-full h-4 bg-[#181a20] rounded-full overflow-hidden p-0.5 border border-white/5 shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+
+                  {/* Completed & Remaining Stats (Clickable to Edit) */}
+                  <div 
+                    onClick={openEditTargetModal}
+                    className="flex items-center justify-between mt-3 mb-5 cursor-pointer p-1.5 -m-1.5 rounded-xl hover:bg-blue-500/5 transition-colors"
+                    title="Click to edit today's study hours"
+                  >
+                    <div>
+                      <span className="text-sm font-black text-blue-400 block font-mono">
+                        {completedStr}
+                      </span>
+                      <span className="text-xs text-gray-400 block mt-0.5">
+                        Completed
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-black text-gray-200 block font-mono">
+                        {remainingStr}
+                      </span>
+                      <span className="text-xs text-gray-400 block mt-0.5">
+                        Remaining
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Motivational Footer with Checked Calendar */}
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-300 leading-snug">
+                Small progress today,<br />
+                <span className="text-blue-400 font-bold">huge results tomorrow.</span>
+              </p>
+              <button 
+                onClick={openEditTargetModal}
+                className="w-10 h-10 rounded-xl border border-blue-500/30 hover:border-blue-400 bg-blue-500/10 hover:bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0 shadow-sm transition-all"
+                title="Update target or progress"
+              >
+                <CalendarCheck className="w-5 h-5 stroke-[1.8]" />
+              </button>
+            </div>
+          </div>
+
+          {/* Widget 5: Mock Performance Card (Realtime & Editable) */}
+          <div 
+            onClick={openEditMockTrendModal}
+            className="bg-[#07090e] border border-cyan-500/20 hover:border-cyan-500/40 rounded-3xl p-5 transition-all duration-300 shadow-2xl relative overflow-hidden group cursor-pointer"
+            title="Click to edit mock test performance trend"
+          >
+            {/* Top Glow Ambient */}
+            <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header: Title */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
+                MOCK PERFORMANCE
+              </span>
+            </div>
+
+            {/* Sub-header: Document Icon + Last 5 Mocks Trend */}
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 rounded-lg border border-cyan-400/40 bg-cyan-400/10 text-cyan-400 flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+                <FileText className="w-4 h-4" />
+              </div>
+              <span className="text-xs text-gray-300 font-medium">
+                Last 5 Mocks Trend
+              </span>
+            </div>
+
+            {/* SVG Trend Line Chart */}
+            {(() => {
+              const points = mockTrendList.slice(-5);
+              const scores = points.map(p => p.score);
+              const maxScore = Math.max(...scores, 100);
+              const minScore = Math.min(...scores, 40);
+
+              let maxVal = 100;
+              let minVal = 40;
+              let gridSteps = [100, 80, 60, 40];
+
+              if (maxScore > 100) {
+                maxVal = Math.ceil(maxScore / 20) * 20;
+                minVal = Math.max(0, Math.floor((minScore - 20) / 20) * 20);
+                const step = (maxVal - minVal) / 3;
+                gridSteps = [maxVal, Math.round(minVal + step * 2), Math.round(minVal + step), minVal];
+              }
+              const range = Math.max(1, maxVal - minVal);
+
+              // Chart dimensions for SVG
+              const width = 300;
+              const height = 150;
+              const padLeft = 36;
+              const padRight = 20;
+              const padTop = 26;
+              const padBottom = 30;
+
+              const plotW = width - padLeft - padRight;
+              const plotH = height - padTop - padBottom;
+
+              const coords = points.map((p, idx) => {
+                const x = padLeft + (idx / Math.max(1, points.length - 1)) * plotW;
+                const normalized = Math.max(0, Math.min(range, p.score - minVal));
+                const y = padTop + plotH - (normalized / range) * plotH;
+                return { ...p, x, y };
+              });
+
+              const pathD = coords.reduce((acc, curr, idx) => {
+                return idx === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`;
+              }, '');
+
+              const latestScore = points[points.length - 1]?.score ?? 0;
+              const firstScore = points[0]?.score ?? 0;
+              const delta = Number((latestScore - firstScore).toFixed(1));
+              const isPositive = delta >= 0;
+
+              return (
+                <div>
+                  <div className="w-full flex justify-center">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto max-h-44 overflow-visible">
+                      <defs>
+                        {/* Gradient for Trend Line */}
+                        <linearGradient id="mockTrendGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#3b82f6" />
+                          <stop offset="50%" stopColor="#06b6d4" />
+                          <stop offset="100%" stopColor="#22c55e" />
+                        </linearGradient>
+                        {/* Glow Filter */}
+                        <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      </defs>
+
+                      {/* Grid Background Box */}
+                      <rect 
+                        x={padLeft} 
+                        y={padTop} 
+                        width={plotW} 
+                        height={plotH} 
+                        fill="#05080e" 
+                        fillOpacity="0.4"
+                        stroke="#1e293b" 
+                        strokeWidth="0.75" 
+                      />
+
+                      {/* Horizontal Grid Lines */}
+                      {gridSteps.map(val => {
+                        const y = padTop + plotH - ((val - minVal) / range) * plotH;
+                        return (
+                          <g key={val}>
+                            <line 
+                              x1={padLeft} 
+                              y1={y} 
+                              x2={width - padRight} 
+                              y2={y} 
+                              stroke="#1e293b" 
+                              strokeWidth="0.75" 
+                            />
+                            <text 
+                              x={padLeft - 7} 
+                              y={y + 3.5} 
+                              textAnchor="end" 
+                              fill="#64748b" 
+                              fontSize="10" 
+                              fontWeight="600"
+                              fontFamily="monospace"
+                            >
+                              {val}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {/* Vertical Column Grid Lines for each Mock */}
+                      {coords.map((c, idx) => (
+                        <line
+                          key={`vline-${idx}`}
+                          x1={c.x}
+                          y1={padTop}
+                          x2={c.x}
+                          y2={padTop + plotH}
+                          stroke="#1e293b"
+                          strokeWidth="0.5"
+                          strokeDasharray="2,2"
+                        />
+                      ))}
+
+                      {/* Connecting Trend Line with Gradient */}
+                      <path 
+                        d={pathD} 
+                        fill="none" 
+                        stroke="url(#mockTrendGradient)" 
+                        strokeWidth="2.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                      />
+
+                      {/* Data Points and Labels */}
+                      {coords.map((c, idx) => {
+                        const isLatest = idx === coords.length - 1;
+                        const dotColor = isLatest 
+                          ? '#22c55e' 
+                          : idx >= 3 
+                            ? '#2dd4bf'
+                            : idx >= 2 
+                              ? '#06b6d4' 
+                              : '#3b82f6';
+                        
+                        return (
+                          <g key={c.id || idx}>
+                            {/* Outer Pulsing Glow */}
+                            <circle 
+                              cx={c.x} 
+                              cy={c.y} 
+                              r={isLatest ? "6.5" : "5"} 
+                              fill={dotColor} 
+                              fillOpacity="0.3"
+                            />
+                            {/* Inner Dot */}
+                            <circle 
+                              cx={c.x} 
+                              cy={c.y} 
+                              r={isLatest ? "4" : "3"} 
+                              fill={dotColor} 
+                              stroke="#07090e"
+                              strokeWidth="1.5"
+                            />
+
+                            {/* Score Text above dot */}
+                            <text 
+                              x={c.x} 
+                              y={c.y - 10} 
+                              textAnchor="middle" 
+                              fill={isLatest ? '#22c55e' : '#f1f5f9'} 
+                              fontSize={isLatest ? "11.5" : "10"} 
+                              fontWeight={isLatest ? "900" : "600"}
+                              fontFamily="monospace"
+                            >
+                              {c.score}
+                            </text>
+
+                            {/* X-axis Label below grid */}
+                            <text 
+                              x={c.x} 
+                              y={padTop + plotH + 18} 
+                              textAnchor="middle" 
+                              fill="#94a3b8" 
+                              fontSize="10" 
+                              fontWeight="500"
+                            >
+                              {c.name}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+
+                  {/* Quick Action below Mock 5 / Chart */}
+                  <div className="flex items-center justify-between mt-1 mb-2 pt-1">
+                    <span className="text-[10px] text-gray-500 font-medium font-mono">
+                      {mockTrendList.length} mocks logged
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openQuickAddMockModal();
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/30 border border-cyan-500/40 hover:border-cyan-500/70 text-cyan-300 hover:text-cyan-100 transition-all flex items-center space-x-1.5 text-[11px] font-bold cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.2)] active:scale-95"
+                      title="Add a new mock score below Mock 5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Mock</span>
+                    </button>
+                  </div>
+
+                  {/* Bottom Stats Card */}
+                  <div className="mt-3 bg-[#0c1017] border border-white/5 rounded-2xl p-3.5 flex items-center justify-between shadow-inner">
+                    <div className="flex-1">
+                      <span className="text-[11px] text-gray-400 font-medium block">
+                        Latest Mock
+                      </span>
+                      <div className="flex items-baseline space-x-1.5 mt-0.5">
+                        <span className="text-xl font-black text-emerald-400 font-mono tracking-tight">
+                          {latestScore}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-300">
+                          Marks
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-[1px] h-8 bg-white/10 mx-3" />
+
+                    <div className="flex-1 text-right">
+                      <span className="text-[11px] text-gray-400 font-medium block">
+                        Improvement
+                      </span>
+                      <div className={`flex items-center justify-end space-x-1 mt-0.5 text-xl font-black font-mono tracking-tight ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <span>{isPositive ? '↑' : '↓'}</span>
+                        <span>{Math.abs(delta)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Motivational Footer */}
+                  <div className="pt-3 mt-3 border-t border-white/5 text-center">
+                    <p className="text-xs font-semibold text-cyan-400 flex items-center justify-center gap-1.5">
+                      <span>{isPositive ? "You're improving. Keep pushing!" : "Stay consistent. Breakthrough is near!"}</span>
+                      <span>🚀</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
         </div>
 
       </div>
@@ -1265,6 +1764,376 @@ export const DashboardView: React.FC = () => {
               className="px-5 py-2 bg-[#a855f7] text-white font-bold rounded-xl hover:bg-[#9333ea] transition-colors"
             >
               Save Metrics
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Today's Target & Study Progress Modal */}
+      <Modal
+        isOpen={isEditTargetModalOpen}
+        onClose={() => setIsEditTargetModalOpen(false)}
+        title="Edit Today's Study Target & Progress"
+      >
+        <form onSubmit={handleSaveTargetModal} className="space-y-5 text-xs">
+          {/* Section 1: Daily Target */}
+          <div className="bg-[#0f1117] border border-blue-500/20 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-blue-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Daily Study Target</span>
+              </label>
+              <span className="text-[11px] text-gray-400 font-mono">
+                {targetHInput}h {targetMInput.toString().padStart(2, '0')}m
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-gray-400 mb-1 text-[11px]">Hours (0 - 24)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  required
+                  value={targetHInput}
+                  onChange={(e) => setTargetHInput(Math.max(0, Math.min(24, parseInt(e.target.value) || 0)))}
+                  className="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-center focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-1 text-[11px]">Minutes (0 - 59)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  required
+                  value={targetMInput}
+                  onChange={(e) => setTargetMInput(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  className="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-center focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Target Presets */}
+            <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+              <span className="text-[10px] text-gray-400 mr-1">Presets:</span>
+              {[3, 4, 5, 6, 8, 10].map(h => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => { setTargetHInput(h); setTargetMInput(0); }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border transition-colors ${
+                    targetHInput === h && targetMInput === 0
+                      ? 'bg-blue-500/25 border-blue-400 text-blue-300'
+                      : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {h}h
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Completed Study Time */}
+          <div className="bg-[#0f1117] border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Today's Completed Study</span>
+              </label>
+              <span className="text-[11px] text-gray-400 font-mono">
+                {completedHInput}h {completedMInput.toString().padStart(2, '0')}m
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-gray-400 mb-1 text-[11px]">Hours (0 - 24)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="24"
+                  required
+                  value={completedHInput}
+                  onChange={(e) => setCompletedHInput(Math.max(0, Math.min(24, parseInt(e.target.value) || 0)))}
+                  className="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-center focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 mb-1 text-[11px]">Minutes (0 - 59)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="59"
+                  required
+                  value={completedMInput}
+                  onChange={(e) => setCompletedMInput(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  className="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2 text-white font-mono font-bold text-center focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            {/* Quick Time Increments */}
+            <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+              <span className="text-[10px] text-gray-400 mr-1">Quick Add:</span>
+              {[
+                { label: '+15m', mins: 15 },
+                { label: '+30m', mins: 30 },
+                { label: '+45m', mins: 45 },
+                { label: '+1h', mins: 60 },
+                { label: '+2h', mins: 120 }
+              ].map(item => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    const totalMins = (completedHInput * 60) + completedMInput + item.mins;
+                    setCompletedHInput(Math.min(24, Math.floor(totalMins / 60)));
+                    setCompletedMInput(totalMins % 60);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-white/5 border border-white/10 text-gray-300 hover:bg-emerald-500/15 hover:border-emerald-500/40 hover:text-emerald-300 transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => { setCompletedHInput(0); setCompletedMInput(0); }}
+                className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 transition-colors ml-auto"
+              >
+                Reset 0
+              </button>
+            </div>
+          </div>
+
+          {/* Live Preview Summary */}
+          {(() => {
+            const totTarget = (targetHInput * 60) + targetMInput;
+            const totCompleted = (completedHInput * 60) + completedMInput;
+            const totRemaining = Math.max(0, totTarget - totCompleted);
+            const pct = totTarget > 0 ? Math.min(100, Math.round((totCompleted / totTarget) * 100)) : 0;
+            const remH = Math.floor(totRemaining / 60);
+            const remM = totRemaining % 60;
+
+            return (
+              <div className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-gray-400 uppercase font-semibold block">Remaining Today</span>
+                  <span className="text-sm font-black text-white font-mono">{remH}h {remM.toString().padStart(2, '0')}m</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-gray-400 uppercase font-semibold block">Daily Completion</span>
+                  <span className="text-sm font-black text-blue-400 font-mono">{pct}%</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Modal Actions */}
+          <div className="flex justify-end space-x-3 pt-3 border-t border-[#222222]">
+            <button
+              type="button"
+              onClick={() => setIsEditTargetModalOpen(false)}
+              className="px-4 py-2 text-[#707085] hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-500/25 transition-all"
+            >
+              Save Target & Progress
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Mock Performance Trend Modal */}
+      <Modal
+        isOpen={isEditMockTrendOpen}
+        onClose={() => setIsEditMockTrendOpen(false)}
+        title="Edit Mock Performance Trend"
+      >
+        <form onSubmit={handleSaveMockTrend} className="space-y-4 text-xs">
+          <div className="flex items-center justify-between pb-2 border-b border-white/10">
+            <p className="text-[#94a3b8]">
+              Update the last 5 mock marks plotted on the trend curve.
+            </p>
+            {mockTests.some(m => m.status === 'Completed') && (
+              <button
+                type="button"
+                onClick={handleSyncFromRecordedMocks}
+                className="px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[11px] font-bold transition-colors whitespace-nowrap"
+              >
+                Auto-fill from Mock Tracker
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            {tempMockTrend.map((item, index) => (
+              <div 
+                key={item.id || index} 
+                className="bg-[#0f1117] border border-cyan-500/20 rounded-xl p-3 flex items-center space-x-3"
+              >
+                <span className="w-6 h-6 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono font-bold flex items-center justify-center text-[10px] flex-shrink-0">
+                  {index + 1}
+                </span>
+                <div className="flex-1">
+                  <label className="block text-gray-400 text-[10px] uppercase font-semibold mb-0.5">Mock Label</label>
+                  <input
+                    type="text"
+                    required
+                    value={item.name}
+                    onChange={(e) => {
+                      const updated = [...tempMockTrend];
+                      updated[index].name = e.target.value;
+                      setTempMockTrend(updated);
+                    }}
+                    className="w-full bg-[#07090e] border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-medium text-xs focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div className="w-24">
+                  <label className="block text-gray-400 text-[10px] uppercase font-semibold mb-0.5">Marks</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="200"
+                    required
+                    value={item.score}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      const updated = [...tempMockTrend];
+                      updated[index].score = Math.min(200, Math.max(0, val));
+                      setTempMockTrend(updated);
+                    }}
+                    className="w-full bg-[#07090e] border border-white/10 rounded-lg px-2 py-1.5 text-white font-mono font-bold text-center text-xs focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                {tempMockTrend.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempMockTrend(tempMockTrend.filter((_, i) => i !== index));
+                    }}
+                    className="p-1.5 text-gray-500 hover:text-rose-400 transition-colors mt-3"
+                    title="Remove mock"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* Add New Row inside Modal */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextNum = tempMockTrend.length + 1;
+                const lastScore = tempMockTrend.length > 0 ? tempMockTrend[tempMockTrend.length - 1].score : 75;
+                setTempMockTrend([
+                  ...tempMockTrend,
+                  { id: `mock-${Date.now()}`, name: `Mock ${nextNum}`, score: lastScore }
+                ]);
+              }}
+              className="w-full py-2 border border-dashed border-cyan-500/30 hover:border-cyan-500/60 rounded-xl text-cyan-400 hover:text-cyan-300 transition-colors flex items-center justify-center space-x-1.5 font-semibold text-xs bg-cyan-500/5 hover:bg-cyan-500/10"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Another Mock Row</span>
+            </button>
+          </div>
+
+          {/* Quick Presets & Reset */}
+          <div className="flex items-center justify-between pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setTempMockTrend([
+                  { id: '1', name: 'Mock 1', score: 68.1 },
+                  { id: '2', name: 'Mock 2', score: 72.4 },
+                  { id: '3', name: 'Mock 3', score: 78.6 },
+                  { id: '4', name: 'Mock 4', score: 86.2 },
+                  { id: '5', name: 'Mock 5', score: 91.2 },
+                ]);
+              }}
+              className="text-[11px] text-cyan-400 hover:underline font-medium"
+            >
+              Reset to Reference Values (68.1 → 91.2)
+            </button>
+          </div>
+
+          {/* Modal Actions */}
+          <div className="flex justify-end space-x-3 pt-3 border-t border-[#222222]">
+            <button
+              type="button"
+              onClick={() => setIsEditMockTrendOpen(false)}
+              className="px-4 py-2 text-[#707085] hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-500/25 transition-all"
+            >
+              Save Performance Trend
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Quick Add Mock Modal */}
+      <Modal
+        isOpen={isQuickAddMockOpen}
+        onClose={() => setIsQuickAddMockOpen(false)}
+        title="Add New Mock Score"
+      >
+        <form onSubmit={handleQuickAddMockSubmit} className="space-y-4 text-xs">
+          <p className="text-gray-400 text-xs">
+            Add a new mock test score to update your performance curve.
+          </p>
+
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Mock Name / Number</label>
+            <input
+              type="text"
+              required
+              value={quickMockName}
+              onChange={(e) => setQuickMockName(e.target.value)}
+              placeholder="e.g. Mock 6"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 text-xs font-medium"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Marks Obtained (out of 200)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="200"
+              required
+              value={quickMockMarks}
+              onChange={(e) => setQuickMockMarks(e.target.value)}
+              placeholder="e.g. 95.0"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 text-xs font-mono font-bold"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-3 border-t border-[#222222]">
+            <button
+              type="button"
+              onClick={() => setIsQuickAddMockOpen(false)}
+              className="px-4 py-2 text-[#707085] hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white font-bold rounded-xl hover:from-cyan-500 hover:to-cyan-400 shadow-lg shadow-cyan-500/25 transition-all"
+            >
+              Add Mock to Trend
             </button>
           </div>
         </form>

@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   Play, Pause, RotateCcw,
-  Flame, Target, Crown, Camera, Cloud, CloudCheck, RefreshCw, LogIn
+  Flame, Target, Crown, Camera
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { 
     currentStreak, 
     userProfile, 
-    setIsProfileModalOpen, 
-    setIsSyncModalOpen,
-    currentUser,
-    isCloudSyncing,
-    lastSyncedAt 
+    setIsProfileModalOpen
   } = useApp();
 
   // Timer State (live timer) with localStorage persistence
@@ -140,35 +136,6 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           </div>
-
-          <div className="h-6 w-[1px] bg-white/10 hidden lg:block" />
-
-          {/* Cloud Database Sync Status Pill */}
-          <button
-            onClick={() => setIsSyncModalOpen(true)}
-            className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-              currentUser 
-                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20' 
-                : 'bg-amber-500/10 border-amber-500/40 text-amber-400 hover:bg-amber-500/20'
-            }`}
-            title="Cloud Database Sync Status & Settings"
-          >
-            {isCloudSyncing ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-            ) : currentUser ? (
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            ) : (
-              <Cloud className="w-3.5 h-3.5 text-amber-400" />
-            )}
-            <div className="flex flex-col text-left">
-              <span className="text-[9px] font-black uppercase tracking-wider leading-none">
-                {currentUser ? 'CLOUD SYNCED' : 'OFFLINE DB'}
-              </span>
-              <span className="text-[8px] text-gray-300 font-mono leading-tight mt-0.5">
-                {currentUser ? 'Firestore Active' : 'Connect Cloud'}
-              </span>
-            </div>
-          </button>
 
           <div className="h-6 w-[1px] bg-white/10 hidden xl:block" />
 

@@ -452,7 +452,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       toast.success(`Welcome, ${result.user.displayName || 'Aspirant'}! Connected to Cloud DB 🚀`);
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      toast.error(err.message || 'Google Sign-In failed');
+      if (err.code === 'auth/admin-restricted-operation' || err.message?.includes('admin-restricted-operation')) {
+        toast.error('Google Sign-In provider is currently not enabled in Firebase Auth. Data is safely saved locally!');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        toast('Sign-in popup was closed.');
+      } else if (err.code === 'auth/popup-blocked') {
+        toast.error('Sign-in popup was blocked by browser. Please allow popups.');
+      } else {
+        toast.error(err.message || 'Google Sign-In failed');
+      }
     }
   };
 
@@ -462,7 +470,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       toast.success('Signed in as Guest with Cloud Database enabled!');
     } catch (err: any) {
       console.error('Guest Sign-In Error:', err);
-      toast.error(err.message || 'Guest Sign-In failed');
+      if (err.code === 'auth/admin-restricted-operation' || err.message?.includes('admin-restricted-operation')) {
+        toast.error('Anonymous Sign-In provider is disabled in Firebase Console. Data is safely saved locally!');
+      } else {
+        toast.error(err.message || 'Guest Sign-In failed');
+      }
     }
   };
 
