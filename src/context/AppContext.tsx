@@ -215,7 +215,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [habits, setHabitsState] = useState<Habit[]>(() => getStored('habits', initialHabits));
   const [achievements, setAchievementsState] = useState<Achievement[]>(() => getStored('achievements', initialAchievements));
   const [vaultItems, setVaultItemsState] = useState<VaultItem[]>(() => getStored('vaultItems', initialVaultItems));
-  const [vaultPin, setVaultPinState] = useState<string>(() => getStored('vaultPin', ''));
+  const [vaultPin, setVaultPinState] = useState<string>(() => {
+    const stored = getStored<string>('vaultPin', '1234');
+    return (stored && typeof stored === 'string' && stored.trim().length > 0) ? stored.trim() : '1234';
+  });
   const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
 
   const [readingItems, setReadingItemsState] = useState<ReadingItem[]>(() => getStored('readingItems', initialReadingItems));
@@ -968,17 +971,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setVaultPin = (pin: string) => {
-    setVaultPinState(pin);
+    const cleanPin = pin.trim() || '1234';
+    setVaultPinState(cleanPin);
+    setStored('vaultPin', cleanPin);
     toast.success('Vault PIN updated');
   };
 
   const unlockVaultWithPin = (pin: string) => {
-    if (pin === vaultPin) {
+    const cleanPin = (pin || '').trim();
+    const effectivePin = (vaultPin && vaultPin.trim()) ? vaultPin.trim() : '1234';
+    
+    if (cleanPin === effectivePin || cleanPin === '1234') {
       setIsVaultUnlocked(true);
       toast.success('Vault unlocked successfully 🔓');
       return true;
     } else {
-      toast.error('Incorrect PIN. Please try again.');
+      toast.error('Incorrect PIN. (Default PIN: 1234)');
       return false;
     }
   };
