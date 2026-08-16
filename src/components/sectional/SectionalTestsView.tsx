@@ -16,6 +16,7 @@ export const SectionalTestsView: React.FC = () => {
   const [name, setName] = useState('');
   const [subject, setSubject] = useState<Subject>('LRDI');
   const [score, setScore] = useState<number>(40);
+  const [attempted, setAttempted] = useState<number>(45);
   const [maxScore, setMaxScore] = useState<number>(50);
   const [timeTaken, setTimeTaken] = useState<number>(35);
   const [remarks, setRemarks] = useState('');
@@ -24,6 +25,7 @@ export const SectionalTestsView: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [editSubject, setEditSubject] = useState<Subject>('LRDI');
   const [editScore, setEditScore] = useState<number>(40);
+  const [editAttempted, setEditAttempted] = useState<number>(45);
   const [editMaxScore, setEditMaxScore] = useState<number>(50);
   const [editTimeTaken, setEditTimeTaken] = useState<number>(35);
   const [editRemarks, setEditRemarks] = useState('');
@@ -35,14 +37,16 @@ export const SectionalTestsView: React.FC = () => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const acc = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-    const estPercentile = Math.min(99.5, Math.max(50, Number((acc * 1.05).toFixed(1))));
+    const effectiveAttempted = attempted || score;
+    const acc = effectiveAttempted > 0 ? Number(((score / effectiveAttempted) * 100).toFixed(1)) : 0;
+    const estPercentile = Math.min(99.9, Math.max(40, Number(((score / (maxScore || 50)) * 105).toFixed(1))));
 
     addSectionalTest({
       name,
       subject,
       date: new Date().toISOString().split('T')[0],
       score,
+      attempted: effectiveAttempted,
       maxScore,
       timeTakenMinutes: timeTaken,
       accuracy: acc,
@@ -60,6 +64,7 @@ export const SectionalTestsView: React.FC = () => {
     setEditName(test.name);
     setEditSubject(test.subject);
     setEditScore(test.score);
+    setEditAttempted(test.attempted ?? test.score);
     setEditMaxScore(test.maxScore);
     setEditTimeTaken(test.timeTakenMinutes);
     setEditRemarks(test.remarks || '');
@@ -71,14 +76,16 @@ export const SectionalTestsView: React.FC = () => {
     e.preventDefault();
     if (!editingTest || !editName.trim()) return;
 
-    const acc = editMaxScore > 0 ? Math.round((editScore / editMaxScore) * 100) : 0;
-    const estPercentile = Math.min(99.5, Math.max(50, Number((acc * 1.05).toFixed(1))));
+    const effectiveAttempted = editAttempted || editScore;
+    const acc = effectiveAttempted > 0 ? Number(((editScore / effectiveAttempted) * 100).toFixed(1)) : 0;
+    const estPercentile = Math.min(99.9, Math.max(40, Number(((editScore / (editMaxScore || 50)) * 105).toFixed(1))));
 
     updateSectionalTest(editingTest.id, {
       name: editName,
       subject: editSubject,
       date: editDate,
       score: editScore,
+      attempted: effectiveAttempted,
       maxScore: editMaxScore,
       timeTakenMinutes: editTimeTaken,
       accuracy: acc,
@@ -178,18 +185,22 @@ export const SectionalTestsView: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/5 text-center">
+              <div className="grid grid-cols-4 gap-1.5 mt-4 pt-3 border-t border-white/5 text-center">
                 <div className="bg-[#111111] p-2 rounded-xl">
                   <p className="text-[10px] text-[#707070]">Score</p>
-                  <p className="text-sm font-bold text-white">{test.score}/{test.maxScore}</p>
+                  <p className="text-sm font-bold text-white font-mono">{test.score}/{test.maxScore}</p>
+                </div>
+                <div className="bg-[#111111] p-2 rounded-xl">
+                  <p className="text-[10px] text-[#707070]">Attempted</p>
+                  <p className="text-sm font-bold text-cyan-400 font-mono">{test.attempted ?? test.score}</p>
                 </div>
                 <div className="bg-[#111111] p-2 rounded-xl">
                   <p className="text-[10px] text-[#707070]">Accuracy</p>
-                  <p className="text-sm font-bold text-[#38E27A]">{test.accuracy}%</p>
+                  <p className="text-sm font-bold text-[#38E27A] font-mono">{test.accuracy}%</p>
                 </div>
                 <div className="bg-[#111111] p-2 rounded-xl">
                   <p className="text-[10px] text-[#707070]">Percentile</p>
-                  <p className="text-sm font-bold text-[#FF7A00]">{test.percentile}%ile</p>
+                  <p className="text-sm font-bold text-[#FF7A00] font-mono">{test.percentile}%</p>
                 </div>
               </div>
 
@@ -249,11 +260,13 @@ export const SectionalTestsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 bg-[#111111] p-3 rounded-2xl border border-white/5">
+          <div className="grid grid-cols-3 gap-3 bg-[#111111] p-3 rounded-2xl border border-white/5">
             <div>
               <label className="block text-[#FF7A00] font-bold">Score Obtained</label>
               <input
                 type="number"
+                min={0}
+                max={attempted || maxScore || 100}
                 value={score}
                 onChange={(e) => setScore(Number(e.target.value))}
                 className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-white font-bold"
@@ -261,9 +274,22 @@ export const SectionalTestsView: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-cyan-400 font-bold">Attempted</label>
+              <input
+                type="number"
+                min={0}
+                max={maxScore || 100}
+                value={attempted}
+                onChange={(e) => setAttempted(Number(e.target.value))}
+                className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-cyan-400 font-bold"
+              />
+            </div>
+
+            <div>
               <label className="block text-[#A9A9A9] font-bold">Max Score</label>
               <input
                 type="number"
+                min={1}
                 value={maxScore}
                 onChange={(e) => setMaxScore(Number(e.target.value))}
                 className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-white font-bold"
@@ -343,11 +369,13 @@ export const SectionalTestsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 bg-[#111111] p-3 rounded-2xl border border-white/5">
+          <div className="grid grid-cols-3 gap-3 bg-[#111111] p-3 rounded-2xl border border-white/5">
             <div>
               <label className="block text-[#FF7A00] font-bold">Score Obtained</label>
               <input
                 type="number"
+                min={0}
+                max={editAttempted || editMaxScore || 100}
                 value={editScore}
                 onChange={(e) => setEditScore(Number(e.target.value))}
                 className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-white font-bold"
@@ -355,9 +383,22 @@ export const SectionalTestsView: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-cyan-400 font-bold">Attempted</label>
+              <input
+                type="number"
+                min={0}
+                max={editMaxScore || 100}
+                value={editAttempted}
+                onChange={(e) => setEditAttempted(Number(e.target.value))}
+                className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-cyan-400 font-bold"
+              />
+            </div>
+
+            <div>
               <label className="block text-[#A9A9A9] font-bold">Max Score</label>
               <input
                 type="number"
+                min={1}
                 value={editMaxScore}
                 onChange={(e) => setEditMaxScore(Number(e.target.value))}
                 className="w-full bg-[#0a0a0a] p-2 text-center rounded-xl text-white font-bold"

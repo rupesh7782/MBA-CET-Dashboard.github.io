@@ -5,17 +5,39 @@ import {
   Maximize2, Zap, Trophy, ShieldCheck, Check, ChevronRight, Eye, Star, TrendingUp,
   MapPin, Edit3, ArrowUpRight, Target, Upload, Camera, Building2, BookOpen, Flag
 } from 'lucide-react';
-import { Quote } from '../../data/quotesData';
+import { INITIAL_QUOTES, Quote } from '../../data/quotesData';
 import { Modal } from '../common/Modal';
 import { MyJourneyWidget } from '../dashboard/MyJourneyWidget';
 import { DailyMotivationWidget } from '../dashboard/DailyMotivationWidget';
 import toast from 'react-hot-toast';
 
 export const MotivationView: React.FC = () => {
-  // State for Daily Quote from Backend API
-  const [dailyQuote, setDailyQuote] = useState<Quote | null>(null);
-  const [allQuotes, setAllQuotes] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const DEFAULT_POSTER = `${import.meta.env.BASE_URL}jbims-poster.svg`;
+
+  // Quotes state initialized with INITIAL_QUOTES + any saved custom quotes
+  const [allQuotes, setAllQuotes] = useState<Quote[]>(() => {
+    try {
+      const savedCustom = localStorage.getItem('mba_cet_custom_quotes');
+      const customQuotes: Quote[] = savedCustom ? JSON.parse(savedCustom) : [];
+      const savedFavs = localStorage.getItem('mba_cet_favorite_quote_ids');
+      const favIds: number[] = savedFavs ? JSON.parse(savedFavs) : [];
+
+      const merged = [...customQuotes, ...INITIAL_QUOTES].map(q => ({
+        ...q,
+        isFavorite: favIds.includes(q.id) || q.isFavorite || false
+      }));
+      return merged;
+    } catch (e) {
+      return INITIAL_QUOTES;
+    }
+  });
+
+  // Daily Quote state
+  const [dailyQuote, setDailyQuote] = useState<Quote | null>(() => {
+    return INITIAL_QUOTES.find(q => q.id === 20) || INITIAL_QUOTES[0] || null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
@@ -23,7 +45,6 @@ export const MotivationView: React.FC = () => {
   const [posterTheme, setPosterTheme] = useState<'classic' | '4k' | 'gold_oled'>('4k');
   
   // JBIMS Campus Image state
-  const DEFAULT_POSTER = "/jbims-poster.svg";
   const [jbimsImage, setJbimsImage] = useState<string>(() => {
     try {
       const saved = localStorage.getItem('mba_cet_jbims_poster_image');
@@ -91,15 +112,14 @@ export const MotivationView: React.FC = () => {
     toast.success('Reset to default JBIMS Master Poster');
   };
   
-  
   // Modal for adding new quote
   const [isAddQuoteOpen, setIsAddQuoteOpen] = useState(false);
   const [newQuoteText, setNewQuoteText] = useState('');
   const [newQuoteAuthor, setNewQuoteAuthor] = useState('');
   const [newQuoteCategory, setNewQuoteCategory] = useState<Quote['category']>('JBIMS Mindset');
 
-  // Journey Poster Editable State
-  const [journeyData, setJourneyData] = useState({
+  // Journey Poster State
+  const [journeyData] = useState({
     attempt1Year: '2025',
     attempt1Title: 'Attempt 1',
     attempt1Score: '68',
@@ -114,12 +134,11 @@ export const MotivationView: React.FC = () => {
     targetStatus: 'PREPARING...',
     tagline: 'One Attempt. One Dream. One College.'
   });
-  
 
   // Time remaining until quote changes
   const [timeUntilTomorrow, setTimeUntilTomorrow] = useState<string>('');
 
-  // Fetch Quotes from Backend Server
+  // Fetch Quotes from Backend Server if available, else keep local store
   useEffect(() => {
     fetchDailyAndAllQuotes();
 
@@ -141,9 +160,8 @@ export const MotivationView: React.FC = () => {
   }, []);
 
   const fetchDailyAndAllQuotes = async () => {
-    setLoading(true);
     try {
-      // 1. Fetch Daily Quote
+      // Try to fetch from backend API if available
       const dailyRes = await fetch('/api/quotes/daily');
       if (dailyRes.ok) {
         const dailyData = await dailyRes.json();
@@ -152,36 +170,48 @@ export const MotivationView: React.FC = () => {
         }
       }
 
-      // 2. Fetch All Quotes
       const allRes = await fetch('/api/quotes');
       if (allRes.ok) {
         const allData = await allRes.json();
-        if (allData.data) {
+        if (allData.data && Array.isArray(allData.data) && allData.data.length > 0) {
           setAllQuotes(allData.data);
         }
       }
     } catch (err) {
-      console.log('Error fetching quotes from backend, falling back to local store', err);
-    } finally {
-      setLoading(false);
+      // Backend not running (e.g. GitHub Pages static host), safely rely on INITIAL_QUOTES
+      console.log('Using local quotes repository (static host mode)');
     }
   };
 
-  // Toggle Favorite
+  // Toggle Favorite with Local Storage Persistence
   const handleToggleFavorite = async (id: number) => {
-    try {
-      const res = await fetch(`/api/quotes/${id}/favorite`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setAllQuotes(prev => prev.map(q => q.id === id ? { ...q, isFavorite: data.data.isFavorite } : q));
-        if (dailyQuote && dailyQuote.id === id) {
-          setDailyQuote(prev => prev ? { ...prev, isFavorite: data.data.isFavorite } : null);
+    setAllQuotes(prev => {
+      const updated = prev.map(q => {
+        if (q.id === id) {
+          const nextFav = !q.isFavorite;
+          toast.success(nextFav ? 'Saved to Favorites!' : 'Removed from Favorites');
+          return { ...q, isFavorite: nextFav };
         }
-        toast.success(data.data.isFavorite ? 'Saved to Favorites!' : 'Removed from Favorites');
-      }
-    } catch (err) {
-      toast.error('Failed to update favorite');
+        return q;
+      });
+
+      // Save favorite IDs to localStorage
+      try {
+        const favIds = updated.filter(q => q.isFavorite).map(q => q.id);
+        localStorage.setItem('mba_cet_favorite_quote_ids', JSON.stringify(favIds));
+      } catch (e) {}
+
+      return updated;
+    });
+
+    if (dailyQuote && dailyQuote.id === id) {
+      setDailyQuote(prev => prev ? { ...prev, isFavorite: !prev.isFavorite } : null);
     }
+
+    // Try background backend sync
+    try {
+      fetch(`/api/quotes/${id}/favorite`, { method: 'POST' }).catch(() => {});
+    } catch (e) {}
   };
 
   // Copy Quote to Clipboard
@@ -199,33 +229,42 @@ export const MotivationView: React.FC = () => {
   };
 
   // Submit New Custom Quote
-  const handleAddCustomQuote = async (e: React.FormEvent) => {
+  const handleAddCustomQuote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuoteText.trim()) return;
 
+    const newQuote: Quote = {
+      id: Date.now(),
+      quote: newQuoteText.trim(),
+      author: newQuoteAuthor.trim() || 'FocusOS',
+      category: newQuoteCategory,
+      bgPreset: 'gold',
+      isFavorite: false
+    };
+
+    // Save to state
+    setAllQuotes(prev => [newQuote, ...prev]);
+
+    // Save to localStorage
     try {
-      const res = await fetch('/api/quotes', {
+      const savedCustom = localStorage.getItem('mba_cet_custom_quotes');
+      const customList: Quote[] = savedCustom ? JSON.parse(savedCustom) : [];
+      localStorage.setItem('mba_cet_custom_quotes', JSON.stringify([newQuote, ...customList]));
+    } catch (err) {}
+
+    toast.success('New motivation quote added successfully!');
+    setIsAddQuoteOpen(false);
+    setNewQuoteText('');
+    setNewQuoteAuthor('');
+
+    // Background API call if server is running
+    try {
+      fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quote: newQuoteText,
-          author: newQuoteAuthor || 'FocusOS',
-          category: newQuoteCategory,
-          bgPreset: 'gold'
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAllQuotes(prev => [data.data, ...prev]);
-        toast.success('New quote added to backend database!');
-        setIsAddQuoteOpen(false);
-        setNewQuoteText('');
-        setNewQuoteAuthor('');
-      }
-    } catch (err) {
-      toast.error('Failed to save quote');
-    }
+        body: JSON.stringify(newQuote)
+      }).catch(() => {});
+    } catch (e) {}
   };
 
   // Filter Quotes

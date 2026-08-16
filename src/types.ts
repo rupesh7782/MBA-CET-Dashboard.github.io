@@ -42,10 +42,15 @@ export interface MockTest {
   date: string; // YYYY-MM-DD
   time?: string;
   varcScore: number;
+  varcAttempted?: number;
   lrdiScore: number;
+  lrdiAttempted?: number;
   arScore: number;
+  arAttempted?: number;
   quantScore: number;
+  quantAttempted?: number;
   totalScore: number;
+  totalAttempted?: number;
   maxScore: number;
   percentile: number;
   timeTakenMinutes: number;
@@ -60,6 +65,7 @@ export interface SectionalTest {
   subject: Subject;
   date: string;
   score: number;
+  attempted?: number;
   maxScore: number;
   timeTakenMinutes: number;
   accuracy: number;

@@ -3,7 +3,7 @@ import { RefreshCw, Bookmark, Copy, Camera, Image as ImageIcon } from 'lucide-re
 import { INITIAL_QUOTES, Quote } from '../../data/quotesData';
 import toast from 'react-hot-toast';
 
-const DEFAULT_JBIMS_POSTER = '/jbims-poster.svg';
+const DEFAULT_JBIMS_POSTER = `${import.meta.env.BASE_URL}jbims-poster.svg`;
 
 const MOTIVATION_BACKGROUNDS = [
   DEFAULT_JBIMS_POSTER,
