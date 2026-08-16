@@ -12,7 +12,7 @@ import { DailyMotivationWidget } from '../dashboard/DailyMotivationWidget';
 import toast from 'react-hot-toast';
 
 export const MotivationView: React.FC = () => {
-  const DEFAULT_POSTER = `${import.meta.env.BASE_URL}jbims-poster.svg`;
+  const DEFAULT_POSTER = `${import.meta.env.BASE_URL}jbims-new.jpg`;
 
   // Quotes state initialized with INITIAL_QUOTES + any saved custom quotes
   const [allQuotes, setAllQuotes] = useState<Quote[]>(() => {
@@ -40,6 +40,9 @@ export const MotivationView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // View mode for JBIMS Poster (Classic vs Enhanced 4K HD vs Gold OLED)
+  const [posterTheme, setPosterTheme] = useState<'classic' | '4k' | 'gold_oled'>('4k');
   
   // JBIMS Campus Image state
   const [jbimsImage, setJbimsImage] = useState<string>(() => {
@@ -115,12 +118,31 @@ export const MotivationView: React.FC = () => {
   const [newQuoteAuthor, setNewQuoteAuthor] = useState('');
   const [newQuoteCategory, setNewQuoteCategory] = useState<Quote['category']>('JBIMS Mindset');
 
+  // Journey Poster State
+  const [journeyData] = useState({
+    attempt1Year: '2025',
+    attempt1Title: 'Attempt 1',
+    attempt1Score: '68',
+    attempt1Bullets: ['No Strategy', 'Low Practice', 'Weak QA', 'Poor Time Mgmt.', 'English Slow'],
+    attempt2Year: '2026',
+    attempt2Title: 'Attempt 2',
+    attempt2Score: '91.23',
+    attempt2Bullets: ['Better Accuracy', 'More Practice', 'Good LR', 'Still Weak in Arithmetic Geometry Time Pressure'],
+    targetYear: '2027',
+    targetTitle: 'MISSION',
+    targetScore: '99.99',
+    targetStatus: 'PREPARING...',
+    tagline: 'One Attempt. One Dream. One College.'
+  });
+
   // Time remaining until quote changes
   const [timeUntilTomorrow, setTimeUntilTomorrow] = useState<string>('');
 
+  // Fetch Quotes from Backend Server if available, else keep local store
   useEffect(() => {
     fetchDailyAndAllQuotes();
 
+    // Calculate time until next midnight quote rotation
     const updateCountdown = () => {
       const now = new Date();
       const midnight = new Date();
@@ -139,6 +161,7 @@ export const MotivationView: React.FC = () => {
 
   const fetchDailyAndAllQuotes = async () => {
     try {
+      // Try to fetch from backend API if available
       const dailyRes = await fetch('/api/quotes/daily');
       if (dailyRes.ok) {
         const dailyData = await dailyRes.json();
@@ -155,10 +178,12 @@ export const MotivationView: React.FC = () => {
         }
       }
     } catch (err) {
+      // Backend not running (e.g. GitHub Pages static host), safely rely on INITIAL_QUOTES
       console.log('Using local quotes repository (static host mode)');
     }
   };
 
+  // Toggle Favorite with Local Storage Persistence
   const handleToggleFavorite = async (id: number) => {
     setAllQuotes(prev => {
       const updated = prev.map(q => {
@@ -170,6 +195,7 @@ export const MotivationView: React.FC = () => {
         return q;
       });
 
+      // Save favorite IDs to localStorage
       try {
         const favIds = updated.filter(q => q.isFavorite).map(q => q.id);
         localStorage.setItem('mba_cet_favorite_quote_ids', JSON.stringify(favIds));
@@ -181,13 +207,28 @@ export const MotivationView: React.FC = () => {
     if (dailyQuote && dailyQuote.id === id) {
       setDailyQuote(prev => prev ? { ...prev, isFavorite: !prev.isFavorite } : null);
     }
+
+    // Try background backend sync
+    try {
+      fetch(`/api/quotes/${id}/favorite`, { method: 'POST' }).catch(() => {});
+    } catch (e) {}
   };
 
+  // Copy Quote to Clipboard
   const handleCopyQuote = (text: string, author: string) => {
     navigator.clipboard.writeText(`"${text}" — ${author}`);
     toast.success('Quote copied to clipboard!');
   };
 
+  // Shuffle / Next Random Quote for Daily Card preview
+  const handleRandomizeDaily = () => {
+    if (allQuotes.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * allQuotes.length);
+    setDailyQuote(allQuotes[randomIndex]);
+    toast.success('Loaded random motivational quote!');
+  };
+
+  // Submit New Custom Quote
   const handleAddCustomQuote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newQuoteText.trim()) return;
@@ -201,8 +242,10 @@ export const MotivationView: React.FC = () => {
       isFavorite: false
     };
 
+    // Save to state
     setAllQuotes(prev => [newQuote, ...prev]);
 
+    // Save to localStorage
     try {
       const savedCustom = localStorage.getItem('mba_cet_custom_quotes');
       const customList: Quote[] = savedCustom ? JSON.parse(savedCustom) : [];
@@ -213,8 +256,18 @@ export const MotivationView: React.FC = () => {
     setIsAddQuoteOpen(false);
     setNewQuoteText('');
     setNewQuoteAuthor('');
+
+    // Background API call if server is running
+    try {
+      fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newQuote)
+      }).catch(() => {});
+    } catch (e) {}
   };
 
+  // Filter Quotes
   const filteredQuotes = allQuotes.filter(q => {
     const matchesCategory = selectedCategory === 'All' 
       ? true 
@@ -227,6 +280,229 @@ export const MotivationView: React.FC = () => {
 
     return matchesCategory && matchesSearch;
   });
+
+  // Export Poster Canvas as 4K PNG Download
+  const downloadPosterPNG = (type: 'jbims' | 'journey') => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (type === 'journey') {
+      // Dark gold luxury journey canvas background
+      const bgGrad = ctx.createRadialGradient(960, 540, 100, 960, 540, 1000);
+      bgGrad.addColorStop(0, '#1a1610');
+      bgGrad.addColorStop(0.6, '#0a0a0a');
+      bgGrad.addColorStop(1, '#050508');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Frame
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(40, 40, 1840, 1000);
+
+      // Header: MY JOURNEY
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px system-ui, sans-serif';
+      ctx.fillText('🏆  MY JOURNEY', 100, 120);
+
+      // Node 1: 2025
+      ctx.beginPath();
+      ctx.arc(320, 420, 110, 0, Math.PI * 2);
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      ctx.fillStyle = '#3b82f6';
+      ctx.font = 'bold 32px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.attempt1Year} ${journeyData.attempt1Title}`, 320, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 68px system-ui';
+      ctx.fillText(journeyData.attempt1Score, 320, 430);
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText('Percentile', 320, 470);
+
+      // Bullets 1
+      ctx.textAlign = 'left';
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#cbd5e1';
+      journeyData.attempt1Bullets.forEach((b, i) => {
+        ctx.fillText(`• ${b}`, 210, 600 + (i * 38));
+      });
+
+      // Arrow 1 to 2
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(450, 420);
+      ctx.lineTo(680, 420);
+      ctx.stroke();
+
+      // Node 2: 2026
+      ctx.beginPath();
+      ctx.arc(800, 420, 110, 0, Math.PI * 2);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 32px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.attempt2Year} ${journeyData.attempt2Title}`, 800, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 64px system-ui';
+      ctx.fillText(journeyData.attempt2Score, 800, 430);
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#86efac';
+      ctx.fillText('Percentile', 800, 470);
+
+      // Bullets 2
+      ctx.textAlign = 'left';
+      ctx.font = '22px system-ui';
+      ctx.fillStyle = '#cbd5e1';
+      journeyData.attempt2Bullets.forEach((b, i) => {
+        ctx.fillText(`• ${b}`, 680, 600 + (i * 38));
+      });
+
+      // Upward Diagonal Glowing Arrow to Node 3
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 10;
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.moveTo(930, 420);
+      ctx.lineTo(1380, 280);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Node 3: 2027 MISSION
+      ctx.beginPath();
+      ctx.arc(1500, 450, 130, 0, Math.PI * 2);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 36px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.targetYear} ${journeyData.targetTitle}`, 1500, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 76px system-ui';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 20;
+      ctx.fillText(journeyData.targetScore, 1500, 460);
+      ctx.shadowBlur = 0;
+      ctx.font = '26px system-ui';
+      ctx.fillStyle = '#fde047';
+      ctx.fillText('Percentile', 1500, 505);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 28px system-ui';
+      ctx.fillText(`Status: ${journeyData.targetStatus}`, 1500, 640);
+
+      // Bottom Banner Text
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 42px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(journeyData.tagline, 960, 1000);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'My_JBIMS_Journey_Roadmap_4K.png';
+      link.href = dataUrl;
+      link.click();
+
+      toast.success('My Journey 4K PNG downloaded!');
+      return;
+    }
+
+    // Default square canvas for 4K wallpaper
+    canvas.width = 1920;
+    canvas.height = 1920;
+
+    // Dark luxury gold gradient background
+    const bgGrad = ctx.createRadialGradient(960, 960, 100, 960, 960, 1200);
+    bgGrad.addColorStop(0, '#1c180a');
+    bgGrad.addColorStop(0.5, '#0d0d14');
+    bgGrad.addColorStop(1, '#050508');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1920, 1920);
+
+    // Gold Outer Frame
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(80, 80, 1760, 1760);
+
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(105, 105, 1710, 1710);
+
+    if (type === 'jbims') {
+      // Top Text: NO BACKUP PLAN
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 52px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.letterSpacing = '6px';
+      ctx.fillText('NO BACKUP PLAN', 960, 300);
+
+      // Middle Text: ONLY JBIMS
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 130px system-ui, sans-serif';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 30;
+      ctx.fillText('ONLY JBIMS', 960, 480);
+
+      // Subtitle: 99.99 PERCENTILE
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 70px system-ui, sans-serif';
+      ctx.shadowBlur = 15;
+      ctx.fillText('99.99 PERCENTILE', 960, 640);
+
+      ctx.shadowBlur = 0;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw gold frame & photo
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(480, 720, 960, 720);
+        ctx.drawImage(img, 485, 725, 950, 710);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 36px system-ui, sans-serif';
+        ctx.fillText('JAMNALAL BAJAJ INSTITUTE OF MANAGEMENT STUDIES', 960, 1530);
+        ctx.font = '28px system-ui, sans-serif';
+        ctx.fillText('CHURCHGATE CAMPUS • MUMBAI', 960, 1680);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'JBIMS_99.99_4K_Poster.png';
+        link.href = dataUrl;
+        link.click();
+        toast.success('High Resolution 4K PNG downloaded!');
+      };
+      img.onerror = () => {
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '32px system-ui, sans-serif';
+        ctx.fillText('CHURCHGATE CAMPUS • MUMBAI', 960, 1680);
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'JBIMS_99.99_4K_Poster.png';
+        link.href = dataUrl;
+        link.click();
+        toast.success('High Resolution 4K PNG downloaded!');
+      };
+      img.src = jbimsImage;
+      return;
+    }
+  };
 
   return (
     <div className="space-y-8 pb-16">
@@ -243,11 +519,13 @@ export const MotivationView: React.FC = () => {
             Motivation & Daily Inspiration
           </h2>
           <p className="text-xs sm:text-sm text-[#9494ad] max-w-2xl leading-relaxed">
-            Fuel your MBA CET preparation with daily quote rotations, custom journey roadmaps, high-definition posters, and unbreakable mindset drills.
+            Fuel your MBA CET preparation with daily quote rotations, custom journey roadmaps, high-definition 4K posters, and unbreakable mindset drills.
           </p>
         </div>
 
         <div className="flex items-center space-x-3 z-10">
+          
+
           <button
             onClick={() => setIsAddQuoteOpen(true)}
             className="px-4 py-2.5 bg-[#a855f7] hover:bg-[#9333ea] text-white text-xs font-bold rounded-xl flex items-center space-x-2 transition-all shadow-lg shadow-[#a855f7]/25"
@@ -258,13 +536,22 @@ export const MotivationView: React.FC = () => {
         </div>
       </div>
 
-      {/* MY JOURNEY ROADMAP */}
-      <MyJourneyWidget />
+      
+      {/* MY JOURNEY EXACT MATCH */}
+      <div className="relative w-full rounded-3xl overflow-hidden">
+      <img
+        src="/my-journey-poster.jpg"
+        alt="My Journey"
+        className="w-full h-auto object-cover"
+      />
+      </div>
 
-      {/* Row: Hero Poster Cards */}
+      {/* Row 1: The Two Hero Poster Cards (Exact side-by-side as requested) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
         {/* CARD 1: JBIMS MASTER POSTER */}
         <div>
+          {/* Poster Frame - Clean Image with Single Border */}
           <div className="relative w-full rounded-3xl overflow-hidden border border-amber-500/60 shadow-2xl bg-black">
             <img 
               src={jbimsImage} 
@@ -275,13 +562,15 @@ export const MotivationView: React.FC = () => {
           </div>
         </div>
 
+
         {/* CARD 2: DAILY MOTIVATION CARD */}
         <div>
           <DailyMotivationWidget instanceKey="motivation" title="MOTIVATION SPOTLIGHT" defaultQuoteId={20} />
         </div>
+
       </div>
 
-      {/* Quotes Database Explorer Section */}
+      {/* Row 2: 100+ Quotes Database Explorer Section */}
       <div className="bg-[#0a0a0a] border border-[#222222] rounded-3xl p-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#222222] pb-5">
           <div>
@@ -291,6 +580,7 @@ export const MotivationView: React.FC = () => {
             </h3>
           </div>
 
+          {/* Search bar */}
           <div className="relative w-full md:w-72">
             <Search className="w-4 h-4 text-[#707085] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -358,6 +648,8 @@ export const MotivationView: React.FC = () => {
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </button>
+
+
                 </div>
               </div>
             </div>
@@ -365,11 +657,15 @@ export const MotivationView: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Custom Quote Modal */}
+      
+
+
+
+      {/* Modal: Add Custom Quote to Backend */}
       <Modal
         isOpen={isAddQuoteOpen}
         onClose={() => setIsAddQuoteOpen(false)}
-        title="Add Motivation Quote"
+        title="Add Motivation Quote to Backend"
       >
         <form onSubmit={handleAddCustomQuote} className="space-y-4 text-xs">
           <div>
@@ -422,7 +718,7 @@ export const MotivationView: React.FC = () => {
               type="submit"
               className="px-5 py-2 bg-[#a855f7] text-white font-bold rounded-xl hover:bg-[#9333ea] transition-colors"
             >
-              Save Quote
+              Save Quote to Backend
             </button>
           </div>
         </form>
@@ -430,3 +726,4 @@ export const MotivationView: React.FC = () => {
     </div>
   );
 };
+
