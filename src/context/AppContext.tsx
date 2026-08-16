@@ -3,13 +3,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { 
-  ExamConfig, MockTest, SectionalTest, Note, PdfItem, 
+  ExamConfig, MockTest, SectionalTest, Note, PdfItem, PyqItem,
   ReadingItem, VocabWord, Formula, Goal, Habit, Achievement, 
   VaultItem, DailyStudyLog, TimerSession, AppNotification, UserProfile 
 } from '../types';
 import { 
   initialExamConfig, initialMockTests, initialSectionalTests, initialNotes, 
-  initialPdfs, initialReadingItems, initialVocabWords, initialFormulas, 
+  initialPdfs, initialPyqItems, initialReadingItems, initialVocabWords, initialFormulas, 
   initialGoals, initialHabits, initialAchievements, initialVaultItems, 
   initialDailyLogs, initialTimerSessions, initialNotifications, initialUserProfile 
 } from '../initialData';
@@ -82,6 +82,14 @@ interface AppContextType {
   toggleBookmarkPdf: (id: string) => void;
   updatePdfProgress: (id: string, lastPageRead: number) => void;
   updatePdfItem: (id: string, item: Partial<PdfItem>) => void;
+
+  pyqItems: PyqItem[];
+  addPyqItem: (pyq: Omit<PyqItem, 'id' | 'uploadDate'>) => void;
+  updatePyqItem: (id: string, item: Partial<PyqItem>) => void;
+  deletePyqItem: (id: string) => void;
+  toggleBookmarkPyq: (id: string) => void;
+  updatePyqProgress: (id: string, lastPageRead: number) => void;
+  toggleSolvedPyq: (id: string) => void;
 
   readingItems: ReadingItem[];
   addReadingItem: (item: Omit<ReadingItem, 'id'>) => void;
@@ -192,6 +200,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [sectionalTests, setSectionalTestsState] = useState<SectionalTest[]>(() => getStored('sectionalTests', initialSectionalTests));
   const [notes, setNotesState] = useState<Note[]>(() => getStored('notes', initialNotes));
   const [pdfs, setPdfsState] = useState<PdfItem[]>(() => getStored('pdfs', initialPdfs));
+  const [pyqItems, setPyqItemsState] = useState<PyqItem[]>(() => getStored('pyqItems', initialPyqItems));
   const [vocabWords, setVocabWordsState] = useState<VocabWord[]>(() => {
     const stored = getStored<VocabWord[]>('vocabWords', initialVocabWords);
     if (!stored || stored.length < initialVocabWords.length) {
@@ -278,6 +287,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             localforage.setItem('mba_cet_prep_v1_readingItems', lsReading).catch(console.error);
           }
         }
+
+        const storedPyqs = await localforage.getItem<PyqItem[]>('mba_cet_prep_v1_pyqItems');
+        if (storedPyqs && Array.isArray(storedPyqs) && storedPyqs.length > 0) {
+          setPyqItemsState(storedPyqs);
+        } else {
+          const lsPyqs = getStored('pyqItems', initialPyqItems);
+          if (lsPyqs && Array.isArray(lsPyqs)) {
+            setPyqItemsState(lsPyqs);
+            localforage.setItem('mba_cet_prep_v1_pyqItems', lsPyqs).catch(console.error);
+          }
+        }
       } catch (e) {
         console.error('Error loading from localforage', e);
       } finally {
@@ -305,6 +325,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try { localStorage.removeItem(LOCAL_STORAGE_KEY_PREFIX + 'readingItems'); } catch (e) {}
     }
   }, [readingItems, isLoaded]);
+  useEffect(() => { 
+    if (isLoaded) {
+      localforage.setItem('mba_cet_prep_v1_pyqItems', pyqItems).catch(console.error);
+      try { localStorage.removeItem(LOCAL_STORAGE_KEY_PREFIX + 'pyqItems'); } catch (e) {}
+    }
+  }, [pyqItems, isLoaded]);
   useEffect(() => setStored('vocabWords', vocabWords), [vocabWords]);
   useEffect(() => setStored('formulas', formulas), [formulas]);
   useEffect(() => setStored('goals', goals), [goals]);
@@ -670,6 +696,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPdfsState(prev => prev.map(p => p.id === id ? { ...p, ...item } : p));
   };
 
+  // PYQs CRUD
+  const addPyqItem = (pyq: Omit<PyqItem, 'id' | 'uploadDate'>) => {
+    const newPyq: PyqItem = {
+      ...pyq,
+      id: 'pyq-' + Date.now(),
+      uploadDate: new Date().toISOString().split('T')[0],
+      isBookmarked: pyq.isBookmarked ?? false,
+      pageCount: pyq.pageCount ?? 10,
+      lastPageRead: pyq.lastPageRead ?? 1,
+      tags: pyq.tags ?? [],
+      weightage: pyq.weightage ?? 'Standard',
+      solvedStatus: pyq.solvedStatus ?? 'Not Started',
+    };
+    setPyqItemsState(prev => [newPyq, ...prev]);
+    toast.success(`Added PYQ "${newPyq.title}"`);
+  };
+
+  const updatePyqItem = (id: string, item: Partial<PyqItem>) => {
+    setPyqItemsState(prev => prev.map(p => p.id === id ? { ...p, ...item } : p));
+    toast.success('PYQ paper updated');
+  };
+
+  const deletePyqItem = (id: string) => {
+    setPyqItemsState(prev => prev.filter(p => p.id !== id));
+    toast.success('PYQ paper removed');
+  };
+
+  const toggleBookmarkPyq = (id: string) => {
+    setPyqItemsState(prev => prev.map(p => p.id === id ? { ...p, isBookmarked: !p.isBookmarked } : p));
+  };
+
+  const updatePyqProgress = (id: string, lastPageRead: number) => {
+    setPyqItemsState(prev => prev.map(p => p.id === id ? { ...p, lastPageRead } : p));
+  };
+
+  const toggleSolvedPyq = (id: string) => {
+    setPyqItemsState(prev => prev.map(p => {
+      if (p.id === id) {
+        const nextStatus = p.solvedStatus === 'Solved' ? 'In Progress' : (p.solvedStatus === 'In Progress' ? 'Not Started' : 'Solved');
+        toast.success(`Marked paper as "${nextStatus}"`);
+        if (nextStatus === 'Solved') {
+          triggerConfetti();
+        }
+        return { ...p, solvedStatus: nextStatus };
+      }
+      return p;
+    }));
+  };
+
   // Reading Items CRUD
   const addReadingItem = (item: Omit<ReadingItem, 'id'>) => {
     const newItem: ReadingItem = {
@@ -978,7 +1053,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Backup & Restore
   const exportData = () => {
     const fullBackup = {
-      userProfile, examConfig, mockTests, sectionalTests, notes, pdfs, 
+      userProfile, examConfig, mockTests, sectionalTests, notes, pdfs, pyqItems,
       readingItems, vocabWords, formulas, goals, habits, 
       achievements, vaultItems, dailyLogs, timerSessions
     };
@@ -1001,6 +1076,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (parsed.sectionalTests) setSectionalTestsState(parsed.sectionalTests);
       if (parsed.notes) setNotesState(parsed.notes);
       if (parsed.pdfs) setPdfsState(parsed.pdfs);
+      if (parsed.pyqItems) setPyqItemsState(parsed.pyqItems);
       if (parsed.readingItems) setReadingItemsState(parsed.readingItems);
       if (parsed.vocabWords) setVocabWordsState(parsed.vocabWords);
       if (parsed.formulas) setFormulasState(parsed.formulas);
@@ -1025,6 +1101,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSectionalTestsState(initialSectionalTests);
     setNotesState(initialNotes);
     setPdfsState(initialPdfs);
+    setPyqItemsState(initialPyqItems);
     setReadingItemsState(initialReadingItems);
     setVocabWordsState(initialVocabWords);
     setFormulasState(initialFormulas);
@@ -1054,6 +1131,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       sectionalTests, addSectionalTest, updateSectionalTest, deleteSectionalTest,
       notes, addNote, updateNote, deleteNote, togglePinNote,
       pdfs, addPdfItem, deletePdfItem, toggleBookmarkPdf, updatePdfProgress, updatePdfItem,
+      pyqItems, addPyqItem, updatePyqItem, deletePyqItem, toggleBookmarkPyq, updatePyqProgress, toggleSolvedPyq,
       readingItems, addReadingItem, updateReadingItem, deleteReadingItem, toggleBookmarkReading, toggleReadReading,
       vocabWords, addVocabWord, updateVocabWord, deleteVocabWord, updateVocabMastery,
       formulas, addFormula, updateFormula, deleteFormula, toggleBookmarkFormula,

@@ -13,6 +13,7 @@ import { MotivationView } from './components/motivation/MotivationView';
 import { StudyTimerView } from './components/timer/StudyTimerView';
 import { NotesView } from './components/notes/NotesView';
 import { PdfLibraryView } from './components/pdf/PdfLibraryView';
+import { PyqView } from './components/pyq/PyqView';
 import { ReadingMaterialView } from './components/reading/ReadingMaterialView';
 import { VocabView } from './components/vocab/VocabView';
 import { FormulaBookView } from './components/formula/FormulaBookView';
@@ -40,6 +41,8 @@ const MainLayout: React.FC = () => {
         return <NotesView />;
       case 'PDF Library':
         return <PdfLibraryView />;
+      case 'PYQ':
+        return <PyqView />;
       case 'Reading Material':
         return <ReadingMaterialView />;
       case 'Vocabulary':

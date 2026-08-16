@@ -3,6 +3,7 @@ export type Subject = 'VARC' | 'LRDI' | 'AR' | 'QUANT';
 export type GoalPeriod = 'Daily' | 'Weekly' | 'Monthly';
 
 export type FormulaCategory = 
+  | 'Quant'
   | 'Arithmetic' 
   | 'Algebra' 
   | 'Geometry' 
@@ -98,6 +99,34 @@ export interface PdfItem {
   lastPageRead: number;
 }
 
+export type PyqCategory = 
+  | 'MBA CET' 
+  | 'CAT' 
+  | 'XAT' 
+  | 'SNAP' 
+  | 'NMAT' 
+  | 'Important Topics' 
+  | 'Formula & Shortcuts' 
+  | 'Other';
+
+export interface PyqItem {
+  id: string;
+  title: string;
+  category: PyqCategory;
+  year?: string;
+  subject: Subject | 'General' | 'Full Length' | 'Imp Topics';
+  fileSize: string;
+  url?: string;
+  isBookmarked: boolean;
+  pageCount: number;
+  lastPageRead: number;
+  uploadDate: string;
+  notes?: string;
+  tags: string[];
+  weightage?: 'Must Solve' | 'High Weightage' | 'Medium Weightage' | 'Standard';
+  solvedStatus?: 'Not Started' | 'In Progress' | 'Solved';
+}
+
 export interface ReadingItem {
   id: string;
   title: string;
@@ -174,6 +203,10 @@ export interface VaultItem {
   category: VaultCategory;
   secretContent: string;
   urlOrFilename?: string;
+  fileDataUrl?: string;
+  fileName?: string;
+  fileSize?: string;
+  fileType?: string;
   updatedAt: string;
 }
 

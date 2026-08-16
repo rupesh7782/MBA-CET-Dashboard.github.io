@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { 
   FolderArchive, UploadCloud, Search, Bookmark, 
-  Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, ExternalLink, FileCheck
+  Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, ExternalLink, FileCheck, Pencil
 } from 'lucide-react';
 import { Subject, PdfItem } from '../../types';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -37,7 +37,8 @@ export const PdfLibraryView: React.FC = () => {
   }
 
 
-  // File upload state
+  // File upload & edit state
+  const [editingPdf, setEditingPdf] = useState<PdfItem | null>(null);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadFolder, setUploadFolder] = useState<Subject>('QUANT');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -45,6 +46,22 @@ export const PdfLibraryView: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenUpload = () => {
+    setEditingPdf(null);
+    setUploadTitle('');
+    setUploadFolder('QUANT');
+    setSelectedFile(null);
+    setIsUploadOpen(true);
+  };
+
+  const handleOpenEdit = (pdf: PdfItem) => {
+    setEditingPdf(pdf);
+    setUploadTitle(pdf.title);
+    setUploadFolder(pdf.folder as Subject);
+    setSelectedFile(null);
+    setIsUploadOpen(true);
+  };
 
   const filteredPdfs = pdfs.filter(p => {
     const matchesFolder = selectedFolder === 'All' || p.folder === selectedFolder;
@@ -81,6 +98,18 @@ export const PdfLibraryView: React.FC = () => {
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const title = uploadTitle.trim() || (selectedFile ? selectedFile.name : 'Untitled Document.pdf');
+    const formattedTitle = title.endsWith('.pdf') ? title : `${title}.pdf`;
+
+    if (editingPdf) {
+      updatePdfItem(editingPdf.id, {
+        title: formattedTitle,
+        folder: uploadFolder
+      });
+      setIsUploadOpen(false);
+      setEditingPdf(null);
+      toast.success('Document updated');
+      return;
+    }
 
     if (selectedFile) {
       const mbSize = (selectedFile.size / (1024 * 1024)).toFixed(1);
@@ -89,7 +118,7 @@ export const PdfLibraryView: React.FC = () => {
       reader.onload = (event) => {
         const base64String = event.target?.result as string;
         addPdfItem({
-          title: title.endsWith('.pdf') ? title : `${title}.pdf`,
+          title: formattedTitle,
           folder: uploadFolder,
           fileSize: `${mbSize} MB`,
           url: base64String,
@@ -101,7 +130,7 @@ export const PdfLibraryView: React.FC = () => {
         setIsUploadOpen(false);
         setUploadTitle('');
         setSelectedFile(null);
-        toast.success(`Added PDF "${title}"`);
+        toast.success(`Added PDF "${formattedTitle}"`);
       };
       reader.onerror = () => {
         toast.error('Failed to read PDF file');
@@ -109,7 +138,7 @@ export const PdfLibraryView: React.FC = () => {
       reader.readAsDataURL(selectedFile);
     } else {
       addPdfItem({
-        title: title.endsWith('.pdf') ? title : `${title}.pdf`,
+        title: formattedTitle,
         folder: uploadFolder,
         fileSize: '5.2 MB',
         url: undefined,
@@ -147,7 +176,7 @@ export const PdfLibraryView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsUploadOpen(true)}
+          onClick={handleOpenUpload}
           className="px-5 py-2.5 bg-[#FF7A00] text-black font-bold rounded-[14px] hover:bg-[#FFB547] transition-all flex items-center space-x-2 text-xs shadow-lg shadow-[#FF7A00]/20 cursor-pointer"
           id="pdf-upload-btn"
         >
@@ -204,18 +233,27 @@ export const PdfLibraryView: React.FC = () => {
                   <span className="text-[9px] text-[#707070] shrink-0">{pdf.fileSize}</span>
                 </div>
                 
-                <div className="flex items-center space-x-0.5 shrink-0">
+                <div className="flex items-center space-x-1 shrink-0">
+                  <button
+                    onClick={() => handleOpenEdit(pdf)}
+                    className="p-1 text-[#707070] hover:text-[#FF7A00] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                    title="Edit PDF Details"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => toggleBookmarkPdf(pdf.id)}
                     className={`p-1 rounded-lg transition-colors cursor-pointer ${
-                      pdf.isBookmarked ? 'text-[#FF7A00]' : 'text-[#707070] hover:text-white'
+                      pdf.isBookmarked ? 'text-[#FF7A00]' : 'text-[#707070] hover:text-white hover:bg-white/5'
                     }`}
+                    title={pdf.isBookmarked ? 'Unpin / Remove Bookmark' : 'Pin / Bookmark PDF'}
                   >
-                    <Bookmark className="w-3.5 h-3.5" />
+                    <Bookmark className={`w-3.5 h-3.5 ${pdf.isBookmarked ? 'fill-current' : ''}`} />
                   </button>
                   <button
                     onClick={() => deletePdfItem(pdf.id)}
-                    className="p-1 text-[#707070] hover:text-[#FF5A5A] rounded-lg cursor-pointer"
+                    className="p-1 text-[#707070] hover:text-[#FF5A5A] hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                    title="Delete PDF"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -393,12 +431,12 @@ export const PdfLibraryView: React.FC = () => {
         </Modal>
       )}
 
-      {/* Upload Modal */}
+      {/* Upload/Edit Modal */}
       <Modal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
-        title="Upload PDF Document"
-        subtitle="Add pyq papers or study material to your library"
+        title={editingPdf ? "Edit PDF Document" : "Upload PDF Document"}
+        subtitle={editingPdf ? "Update document title and subject folder" : "Add pyq papers or study material to your library"}
       >
         <form onSubmit={handleUploadSubmit} className="space-y-4 text-xs">
           <div>

@@ -197,7 +197,7 @@ export const FormulaBookView: React.FC = () => {
       {/* Categories & Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-          {['All', 'Arithmetic', 'Algebra', 'Geometry', 'Modern Maths', 'Data Interpretation', 'Shortcuts'].map(cat => (
+          {['All', 'Quant', 'Arithmetic', 'Algebra', 'Geometry', 'Modern Maths', 'Data Interpretation', 'Shortcuts'].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -448,6 +448,7 @@ export const FormulaBookView: React.FC = () => {
               onChange={(e: any) => setCategory(e.target.value)}
               className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2 text-white focus:outline-none focus:border-[#FF7A00]"
             >
+              <option value="Quant">Quant</option>
               <option value="Arithmetic">Arithmetic</option>
               <option value="Algebra">Algebra</option>
               <option value="Geometry">Geometry</option>

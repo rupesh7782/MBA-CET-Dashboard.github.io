@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Search, FileText, Calculator, Type, FileSpreadsheet, X, ArrowRight } from 'lucide-react';
+import { Search, FileText, Calculator, Type, FileSpreadsheet, GraduationCap, X, ArrowRight } from 'lucide-react';
 
 export const CommandPalette: React.FC = () => {
   const { 
@@ -10,6 +10,7 @@ export const CommandPalette: React.FC = () => {
     formulas, 
     vocabWords, 
     mockTests, 
+    pyqItems,
     setActiveTab 
   } = useApp();
 
@@ -30,6 +31,7 @@ export const CommandPalette: React.FC = () => {
   if (!isCommandPaletteOpen) return null;
 
   const filteredNotes = notes.filter(n => n.title.toLowerCase().includes(query.toLowerCase()) || n.tags.some(t => t.toLowerCase().includes(query.toLowerCase())));
+  const filteredPyqs = pyqItems.filter(p => p.title.toLowerCase().includes(query.toLowerCase()) || (p.notes && p.notes.toLowerCase().includes(query.toLowerCase())) || (p.tags && p.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))));
   const filteredFormulas = formulas.filter(f => f.title.toLowerCase().includes(query.toLowerCase()) || f.category.toLowerCase().includes(query.toLowerCase()));
   const filteredVocab = vocabWords.filter(v => v.word.toLowerCase().includes(query.toLowerCase()) || v.meaning.toLowerCase().includes(query.toLowerCase()));
   const filteredMocks = mockTests.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
@@ -75,6 +77,27 @@ export const CommandPalette: React.FC = () => {
                     <FileText className="w-4 h-4 text-[#38bdf8]" />
                     <span className="text-white font-medium">{n.title}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-lg bg-[#141414] text-gray-300">{n.subject}</span>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* PYQ Papers Section */}
+          {filteredPyqs.length > 0 && (
+            <div>
+              <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-gray-400 mb-1.5">PYQ & Imp Topics</p>
+              {filteredPyqs.slice(0, 3).map(p => (
+                <div
+                  key={p.id}
+                  onClick={() => handleSelect('PYQ')}
+                  className="px-3 py-2.5 rounded-xl hover:bg-[#141414] flex items-center justify-between cursor-pointer group text-xs transition-colors border border-transparent hover:border-white/10"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <GraduationCap className="w-4 h-4 text-[#EAB308]" />
+                    <span className="text-white font-medium">{p.title}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-lg bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30">{p.category}</span>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
                 </div>

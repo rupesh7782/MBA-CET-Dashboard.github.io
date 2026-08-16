@@ -28,6 +28,7 @@ export const navigationItems: NavItem[] = [
   { name: 'Study Timer', icon: Timer },
   { name: 'Notes', icon: FileText },
   { name: 'PDF Library', icon: FolderArchive },
+  { name: 'PYQ', icon: GraduationCap },
   { name: 'Reading Material', icon: Newspaper },
   { name: 'Vocabulary', icon: AaIcon },
   { name: 'Formula Book', icon: Calculator },
