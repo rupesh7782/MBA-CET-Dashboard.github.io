@@ -289,23 +289,39 @@ export const VaultView: React.FC = () => {
           </div>
 
           <form onSubmit={handleUnlockSubmit} className="space-y-4">
-            <input
-              type="password"
-              maxLength={6}
-              autoFocus
-              value={inputPin}
-              onChange={(e) => setInputPin(e.target.value)}
-              placeholder="Enter PIN (Default: 1234)"
-              className="w-full bg-[#111111] border border-white/10 rounded-[18px] p-3 text-center text-lg font-mono font-bold text-white tracking-widest focus:outline-none focus:border-[#FF7A00]"
-              id="vault-pin-input"
-            />
+            <div>
+              <input
+                type="password"
+                maxLength={6}
+                autoFocus
+                value={inputPin}
+                onChange={(e) => setInputPin(e.target.value)}
+                placeholder="Enter 4-digit PIN (Default: 1234)"
+                className="w-full bg-[#111111] border border-white/10 rounded-[18px] p-3 text-center text-lg font-mono font-bold text-white tracking-widest focus:outline-none focus:border-[#FF7A00]"
+                id="vault-pin-input"
+              />
+              <p className="text-[11px] text-gray-500 mt-2">
+                Default PIN is <span className="text-[#FF7A00] font-mono font-bold">1234</span>
+              </p>
+            </div>
 
             <button
               type="submit"
-              className="w-full py-3 bg-[#FF7A00] text-black font-bold text-xs rounded-[16px] hover:bg-[#FFB547] shadow-lg shadow-[#FF7A00]/20 cursor-pointer"
+              className="w-full py-3 bg-[#FF7A00] text-black font-bold text-xs rounded-[16px] hover:bg-[#FFB547] shadow-lg shadow-[#FF7A00]/20 cursor-pointer transition-all"
               id="vault-unlock-btn"
             >
               Unlock Vault 🔓
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setInputPin('1234');
+                unlockVaultWithPin('1234');
+              }}
+              className="w-full py-2 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-[14px] text-[11px] font-medium border border-white/10 transition-colors cursor-pointer"
+            >
+              Quick Unlock with Default PIN (1234)
             </button>
           </form>
         </div>
