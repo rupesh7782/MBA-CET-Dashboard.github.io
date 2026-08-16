@@ -61,30 +61,31 @@ export const MockTestsView: React.FC = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const totalScore = varcScore + lrdiScore + arScore + quantScore;
-    const totalAttempted = varcAttempted + lrdiAttempted + arAttempted + quantAttempted;
-    const accuracy = totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
-    const estPercentile = Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1))));
+    const isCompleted = status === 'Completed';
+    const totalScore = isCompleted ? varcScore + lrdiScore + arScore + quantScore : 0;
+    const totalAttempted = isCompleted ? varcAttempted + lrdiAttempted + arAttempted + quantAttempted : 0;
+    const accuracy = isCompleted && totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
+    const estPercentile = isCompleted ? Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1)))) : 0;
 
     addMockTest({
       name,
       date,
       time,
-      varcScore,
-      varcAttempted,
-      lrdiScore,
-      lrdiAttempted,
-      arScore,
-      arAttempted,
-      quantScore,
-      quantAttempted,
+      varcScore: isCompleted ? varcScore : 0,
+      varcAttempted: isCompleted ? varcAttempted : 0,
+      lrdiScore: isCompleted ? lrdiScore : 0,
+      lrdiAttempted: isCompleted ? lrdiAttempted : 0,
+      arScore: isCompleted ? arScore : 0,
+      arAttempted: isCompleted ? arAttempted : 0,
+      quantScore: isCompleted ? quantScore : 0,
+      quantAttempted: isCompleted ? quantAttempted : 0,
       totalScore,
       totalAttempted,
       maxScore: 200,
       percentile: estPercentile,
-      timeTakenMinutes: timeTaken,
+      timeTakenMinutes: isCompleted ? timeTaken : 150,
       accuracy,
-      remarks: remarks || 'Mock test completed',
+      remarks: remarks || (isCompleted ? 'Mock test completed' : 'Scheduled mock test'),
       status,
     });
 
@@ -114,27 +115,28 @@ export const MockTestsView: React.FC = () => {
     e.preventDefault();
     if (!selectedMock) return;
 
-    const totalScore = varcScore + lrdiScore + arScore + quantScore;
-    const totalAttempted = varcAttempted + lrdiAttempted + arAttempted + quantAttempted;
-    const accuracy = totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
-    const estPercentile = Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1))));
+    const isCompleted = status === 'Completed';
+    const totalScore = isCompleted ? varcScore + lrdiScore + arScore + quantScore : 0;
+    const totalAttempted = isCompleted ? varcAttempted + lrdiAttempted + arAttempted + quantAttempted : 0;
+    const accuracy = isCompleted && totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
+    const estPercentile = isCompleted ? Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1)))) : 0;
 
     updateMockTest(selectedMock.id, {
       name,
       date,
       time,
-      varcScore,
-      varcAttempted,
-      lrdiScore,
-      lrdiAttempted,
-      arScore,
-      arAttempted,
-      quantScore,
-      quantAttempted,
+      varcScore: isCompleted ? varcScore : 0,
+      varcAttempted: isCompleted ? varcAttempted : 0,
+      lrdiScore: isCompleted ? lrdiScore : 0,
+      lrdiAttempted: isCompleted ? lrdiAttempted : 0,
+      arScore: isCompleted ? arScore : 0,
+      arAttempted: isCompleted ? arAttempted : 0,
+      quantScore: isCompleted ? quantScore : 0,
+      quantAttempted: isCompleted ? quantAttempted : 0,
       totalScore,
       totalAttempted,
       percentile: estPercentile,
-      timeTakenMinutes: timeTaken,
+      timeTakenMinutes: isCompleted ? timeTaken : 150,
       accuracy,
       status,
       remarks,
@@ -615,142 +617,144 @@ export const MockTestsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-gray-400 font-semibold px-1">
-                <span>Sectional Performance (Attempted vs Score)</span>
-                <span className="text-[#FF7A00]">Max: 200 Qs</span>
+            {status === 'Completed' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-[11px] text-gray-400 font-semibold px-1">
+                  <span>Sectional Performance (Attempted vs Score)</span>
+                  <span className="text-[#FF7A00]">Max: 200 Qs</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#111111] p-3.5 rounded-2xl border border-white/5">
+                  {/* VARC */}
+                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                    <span className="block text-[#FF7A00] font-bold text-[11px]">VARC (Max 50)</span>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Attempted</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={varcAttempted}
+                        onChange={(e) => setVarcAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={varcAttempted || 50}
+                        value={varcScore}
+                        onChange={(e) => setVarcScore(Math.min(50, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                  </div>
+
+                  {/* LRDI */}
+                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                    <span className="block text-[#FFB547] font-bold text-[11px]">LRDI (Max 75)</span>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Attempted</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={75}
+                        value={lrdiAttempted}
+                        onChange={(e) => setLrdiAttempted(Math.min(75, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={lrdiAttempted || 75}
+                        value={lrdiScore}
+                        onChange={(e) => setLrdiScore(Math.min(75, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                  </div>
+
+                  {/* AR */}
+                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                    <span className="block text-[#F4B400] font-bold text-[11px]">AR (Max 25)</span>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Attempted</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={25}
+                        value={arAttempted}
+                        onChange={(e) => setArAttempted(Math.min(25, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={arAttempted || 25}
+                        value={arScore}
+                        onChange={(e) => setArScore(Math.min(25, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                  </div>
+
+                  {/* QUANT */}
+                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
+                    <span className="block text-[#38E27A] font-bold text-[11px]">QUANT (Max 50)</span>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Attempted</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={quantAttempted}
+                        onChange={(e) => setQuantAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={quantAttempted || 50}
+                        value={quantScore}
+                        onChange={(e) => setQuantScore(Math.min(50, Math.max(0, Number(e.target.value))))}
+                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Real-time Summary Card inside modal */}
+                <div className="p-3 bg-[#0a0a0a] border border-cyan-500/20 rounded-xl grid grid-cols-4 gap-2 text-center">
+                  <div>
+                    <span className="text-[10px] text-gray-400 block font-medium">Attempted</span>
+                    <span className="text-sm font-bold text-cyan-400 font-mono">{currentTotalAttempted}/200</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-400 block font-medium">Total Score</span>
+                    <span className="text-sm font-bold text-emerald-400 font-mono">{currentTotalScore}/200</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-400 block font-medium">Accuracy</span>
+                    <span className="text-sm font-bold text-amber-400 font-mono">{currentAccuracy}%</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-400 block font-medium">Est. %ile</span>
+                    <span className="text-sm font-bold text-[#FF7A00] font-mono">{currentEstPercentile}%</span>
+                  </div>
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#111111] p-3.5 rounded-2xl border border-white/5">
-                {/* VARC */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#FF7A00] font-bold text-[11px]">VARC (Max 50)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={varcAttempted}
-                      onChange={(e) => setVarcAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={varcAttempted || 50}
-                      value={varcScore}
-                      onChange={(e) => setVarcScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* LRDI */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#FFB547] font-bold text-[11px]">LRDI (Max 75)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={75}
-                      value={lrdiAttempted}
-                      onChange={(e) => setLrdiAttempted(Math.min(75, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={lrdiAttempted || 75}
-                      value={lrdiScore}
-                      onChange={(e) => setLrdiScore(Math.min(75, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* AR */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#F4B400] font-bold text-[11px]">AR (Max 25)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={25}
-                      value={arAttempted}
-                      onChange={(e) => setArAttempted(Math.min(25, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={arAttempted || 25}
-                      value={arScore}
-                      onChange={(e) => setArScore(Math.min(25, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* QUANT */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#38E27A] font-bold text-[11px]">QUANT (Max 50)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={quantAttempted}
-                      onChange={(e) => setQuantAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={quantAttempted || 50}
-                      value={quantScore}
-                      onChange={(e) => setQuantScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Real-time Summary Card inside modal */}
-              <div className="p-3 bg-[#0a0a0a] border border-cyan-500/20 rounded-xl grid grid-cols-4 gap-2 text-center">
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Attempted</span>
-                  <span className="text-sm font-bold text-cyan-400 font-mono">{currentTotalAttempted}/200</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Total Score</span>
-                  <span className="text-sm font-bold text-emerald-400 font-mono">{currentTotalScore}/200</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Accuracy</span>
-                  <span className="text-sm font-bold text-amber-400 font-mono">{currentAccuracy}%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Est. %ile</span>
-                  <span className="text-sm font-bold text-[#FF7A00] font-mono">{currentEstPercentile}%</span>
-                </div>
-              </div>
-            </div>
+            )}
 
             <div>
               <label className="block text-[#A9A9A9] mb-1 font-medium">Remarks</label>
