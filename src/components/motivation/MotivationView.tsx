@@ -538,7 +538,11 @@ export const MotivationView: React.FC = () => {
 
       
       {/* MY JOURNEY EXACT MATCH */}
-      <MyJourneyWidget />
+      <img
+        src={`${import.meta.env.BASE_URL}my-journey-poster.png`}
+        alt="My Journey"
+        className="w-full h-auto object-cover"
+      />
 
       {/* Row 1: The Two Hero Poster Cards (Exact side-by-side as requested) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -548,7 +552,7 @@ export const MotivationView: React.FC = () => {
           {/* Poster Frame - Clean Image with Single Border */}
           <div className="relative w-full rounded-3xl overflow-hidden border border-amber-500/60 shadow-2xl bg-black">
             <img 
-              src={jbimsImage} 
+              src={`${import.meta.env.BASE_URL}jbims-new.jpg`}
               alt="JBIMS Master Poster" 
               className="w-full h-full object-cover rounded-3xl"
               referrerPolicy="no-referrer"
