@@ -1,778 +1,726 @@
-import React, { useState } from 'react';
-import { useApp } from '../../context/AppContext';
-import { FileSpreadsheet, Plus, Trophy, Clock, Target, Trash2, Edit3, CheckCircle2, TrendingUp, Sparkles, Percent } from 'lucide-react';
-import { MockTest } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Flame, Sparkles, Quote as QuoteIcon, RefreshCw, Bookmark, BookmarkCheck, 
+  Copy, Download, Share2, Plus, Search, Filter, Play, Pause, Volume2, VolumeX,
+  Maximize2, Zap, Trophy, ShieldCheck, Check, ChevronRight, Eye, Star, TrendingUp,
+  MapPin, Edit3, ArrowUpRight, Target, Upload, Camera, Building2, BookOpen, Flag
+} from 'lucide-react';
+import { INITIAL_QUOTES, Quote } from '../../data/quotesData';
 import { Modal } from '../common/Modal';
+import { MyJourneyWidget } from '../dashboard/MyJourneyWidget';
+import { DailyMotivationWidget } from '../dashboard/DailyMotivationWidget';
+import toast from 'react-hot-toast';
 
-export const MockTestsView: React.FC = () => {
-  const { mockTests, addMockTest, updateMockTest, deleteMockTest } = useApp();
+export const MotivationView: React.FC = () => {
+  const DEFAULT_POSTER = `${import.meta.env.BASE_URL}jbims-poster.svg`;
 
-  const [selectedMock, setSelectedMock] = useState<MockTest | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  // Quotes state initialized with INITIAL_QUOTES + any saved custom quotes
+  const [allQuotes, setAllQuotes] = useState<Quote[]>(() => {
+    try {
+      const savedCustom = localStorage.getItem('mba_cet_custom_quotes');
+      const customQuotes: Quote[] = savedCustom ? JSON.parse(savedCustom) : [];
+      const savedFavs = localStorage.getItem('mba_cet_favorite_quote_ids');
+      const favIds: number[] = savedFavs ? JSON.parse(savedFavs) : [];
 
-  // Form state
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('2026-05-28');
-  const [time, setTime] = useState('09:00 AM');
-  
-  // Sectional Scores & Attempts
-  const [varcScore, setVarcScore] = useState<number>(38);
-  const [varcAttempted, setVarcAttempted] = useState<number>(44);
-  
-  const [lrdiScore, setLrdiScore] = useState<number>(52);
-  const [lrdiAttempted, setLrdiAttempted] = useState<number>(60);
-  
-  const [arScore, setArScore] = useState<number>(41);
-  const [arAttempted, setArAttempted] = useState<number>(46);
-  
-  const [quantScore, setQuantScore] = useState<number>(39);
-  const [quantAttempted, setQuantAttempted] = useState<number>(44);
-  
-  const [timeTaken, setTimeTaken] = useState<number>(150);
-  const [status, setStatus] = useState<'Completed' | 'Upcoming' | 'Scheduled'>('Completed');
-  const [remarks, setRemarks] = useState('');
+      const merged = [...customQuotes, ...INITIAL_QUOTES].map(q => ({
+        ...q,
+        isFavorite: favIds.includes(q.id) || q.isFavorite || false
+      }));
+      return merged;
+    } catch (e) {
+      return INITIAL_QUOTES;
+    }
+  });
 
-  // Auto-calculated form values
-  const currentTotalAttempted = varcAttempted + lrdiAttempted + arAttempted + quantAttempted;
-  const currentTotalScore = varcScore + lrdiScore + arScore + quantScore;
-  const currentAccuracy = currentTotalAttempted > 0 
-    ? Number(((currentTotalScore / currentTotalAttempted) * 100).toFixed(1)) 
-    : 0;
-  const currentEstPercentile = Math.min(99.99, Math.max(10, Number(((currentTotalScore / 200) * 112).toFixed(1))));
+  // Daily Quote state
+  const [dailyQuote, setDailyQuote] = useState<Quote | null>(() => {
+    return INITIAL_QUOTES.find(q => q.id === 20) || INITIAL_QUOTES[0] || null;
+  });
 
-  const openAddModal = () => {
-    setName(`MBA CET Mock Test ${mockTests.length + 1}`);
-    setDate(new Date().toISOString().split('T')[0]);
-    setTime('09:00 AM');
-    setVarcScore(38);
-    setVarcAttempted(44);
-    setLrdiScore(52);
-    setLrdiAttempted(60);
-    setArScore(40);
-    setArAttempted(45);
-    setQuantScore(36);
-    setQuantAttempted(42);
-    setTimeTaken(150);
-    setStatus('Completed');
-    setRemarks('');
-    setIsAddOpen(true);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // View mode for JBIMS Poster (Classic vs Enhanced 4K HD vs Gold OLED)
+  const [posterTheme, setPosterTheme] = useState<'classic' | '4k' | 'gold_oled'>('4k');
+  
+  // JBIMS Campus Image state
+  const [jbimsImage, setJbimsImage] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('mba_cet_jbims_poster_image');
+      if (saved) return saved;
+    } catch (e) {}
+    return DEFAULT_POSTER;
+  });
+
+  const posterFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Compressed image handler to prevent localStorage QuotaExceededError
+  const handlePosterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setJbimsImage(compressedDataUrl);
+          try {
+            localStorage.setItem('mba_cet_jbims_poster_image', compressedDataUrl);
+            toast.success('Poster image updated successfully!');
+          } catch (err) {
+            console.warn('Could not save to localStorage:', err);
+            toast.success('Poster updated for this session!');
+          }
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const isCompleted = status === 'Completed';
-    const totalScore = isCompleted ? varcScore + lrdiScore + arScore + quantScore : 0;
-    const totalAttempted = isCompleted ? varcAttempted + lrdiAttempted + arAttempted + quantAttempted : 0;
-    const accuracy = isCompleted && totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
-    const estPercentile = isCompleted ? Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1)))) : 0;
+  const handleResetPoster = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setJbimsImage(DEFAULT_POSTER);
+    try {
+      localStorage.removeItem('mba_cet_jbims_poster_image');
+    } catch (err) {}
+    toast.success('Reset to default JBIMS Master Poster');
+  };
+  
+  // Modal for adding new quote
+  const [isAddQuoteOpen, setIsAddQuoteOpen] = useState(false);
+  const [newQuoteText, setNewQuoteText] = useState('');
+  const [newQuoteAuthor, setNewQuoteAuthor] = useState('');
+  const [newQuoteCategory, setNewQuoteCategory] = useState<Quote['category']>('JBIMS Mindset');
 
-    addMockTest({
-      name,
-      date,
-      time,
-      varcScore: isCompleted ? varcScore : 0,
-      varcAttempted: isCompleted ? varcAttempted : 0,
-      lrdiScore: isCompleted ? lrdiScore : 0,
-      lrdiAttempted: isCompleted ? lrdiAttempted : 0,
-      arScore: isCompleted ? arScore : 0,
-      arAttempted: isCompleted ? arAttempted : 0,
-      quantScore: isCompleted ? quantScore : 0,
-      quantAttempted: isCompleted ? quantAttempted : 0,
-      totalScore,
-      totalAttempted,
-      maxScore: 200,
-      percentile: estPercentile,
-      timeTakenMinutes: isCompleted ? timeTaken : 150,
-      accuracy,
-      remarks: remarks || (isCompleted ? 'Mock test completed' : 'Scheduled mock test'),
-      status,
+  // Journey Poster State
+  const [journeyData] = useState({
+    attempt1Year: '2025',
+    attempt1Title: 'Attempt 1',
+    attempt1Score: '68',
+    attempt1Bullets: ['No Strategy', 'Low Practice', 'Weak QA', 'Poor Time Mgmt.', 'English Slow'],
+    attempt2Year: '2026',
+    attempt2Title: 'Attempt 2',
+    attempt2Score: '91.23',
+    attempt2Bullets: ['Better Accuracy', 'More Practice', 'Good LR', 'Still Weak in Arithmetic Geometry Time Pressure'],
+    targetYear: '2027',
+    targetTitle: 'MISSION',
+    targetScore: '99.99',
+    targetStatus: 'PREPARING...',
+    tagline: 'One Attempt. One Dream. One College.'
+  });
+
+  // Time remaining until quote changes
+  const [timeUntilTomorrow, setTimeUntilTomorrow] = useState<string>('');
+
+  // Fetch Quotes from Backend Server if available, else keep local store
+  useEffect(() => {
+    fetchDailyAndAllQuotes();
+
+    // Calculate time until next midnight quote rotation
+    const updateCountdown = () => {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      const diffMs = midnight.getTime() - now.getTime();
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
+      setTimeUntilTomorrow(`${hours.toString().padStart(2, '0')}h ${mins.toString().padStart(2, '0')}m ${secs.toString().padStart(2, '0')}s`);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchDailyAndAllQuotes = async () => {
+    try {
+      // Try to fetch from backend API if available
+      const dailyRes = await fetch('/api/quotes/daily');
+      if (dailyRes.ok) {
+        const dailyData = await dailyRes.json();
+        if (dailyData.dailyQuote) {
+          setDailyQuote(dailyData.dailyQuote);
+        }
+      }
+
+      const allRes = await fetch('/api/quotes');
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        if (allData.data && Array.isArray(allData.data) && allData.data.length > 0) {
+          setAllQuotes(allData.data);
+        }
+      }
+    } catch (err) {
+      // Backend not running (e.g. GitHub Pages static host), safely rely on INITIAL_QUOTES
+      console.log('Using local quotes repository (static host mode)');
+    }
+  };
+
+  // Toggle Favorite with Local Storage Persistence
+  const handleToggleFavorite = async (id: number) => {
+    setAllQuotes(prev => {
+      const updated = prev.map(q => {
+        if (q.id === id) {
+          const nextFav = !q.isFavorite;
+          toast.success(nextFav ? 'Saved to Favorites!' : 'Removed from Favorites');
+          return { ...q, isFavorite: nextFav };
+        }
+        return q;
+      });
+
+      // Save favorite IDs to localStorage
+      try {
+        const favIds = updated.filter(q => q.isFavorite).map(q => q.id);
+        localStorage.setItem('mba_cet_favorite_quote_ids', JSON.stringify(favIds));
+      } catch (e) {}
+
+      return updated;
     });
 
-    setIsAddOpen(false);
+    if (dailyQuote && dailyQuote.id === id) {
+      setDailyQuote(prev => prev ? { ...prev, isFavorite: !prev.isFavorite } : null);
+    }
+
+    // Try background backend sync
+    try {
+      fetch(`/api/quotes/${id}/favorite`, { method: 'POST' }).catch(() => {});
+    } catch (e) {}
   };
 
-  const openEditModal = (m: MockTest) => {
-    setSelectedMock(m);
-    setName(m.name);
-    setDate(m.date);
-    setTime(m.time || '09:00 AM');
-    setVarcScore(m.varcScore ?? 0);
-    setVarcAttempted(m.varcAttempted ?? m.varcScore ?? 0);
-    setLrdiScore(m.lrdiScore ?? 0);
-    setLrdiAttempted(m.lrdiAttempted ?? m.lrdiScore ?? 0);
-    setArScore(m.arScore ?? 0);
-    setArAttempted(m.arAttempted ?? m.arScore ?? 0);
-    setQuantScore(m.quantScore ?? 0);
-    setQuantAttempted(m.quantAttempted ?? m.quantScore ?? 0);
-    setTimeTaken(m.timeTakenMinutes ?? 150);
-    setStatus(m.status);
-    setRemarks(m.remarks || '');
-    setIsEditOpen(true);
+  // Copy Quote to Clipboard
+  const handleCopyQuote = (text: string, author: string) => {
+    navigator.clipboard.writeText(`"${text}" — ${author}`);
+    toast.success('Quote copied to clipboard!');
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  // Shuffle / Next Random Quote for Daily Card preview
+  const handleRandomizeDaily = () => {
+    if (allQuotes.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * allQuotes.length);
+    setDailyQuote(allQuotes[randomIndex]);
+    toast.success('Loaded random motivational quote!');
+  };
+
+  // Submit New Custom Quote
+  const handleAddCustomQuote = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMock) return;
+    if (!newQuoteText.trim()) return;
 
-    const isCompleted = status === 'Completed';
-    const totalScore = isCompleted ? varcScore + lrdiScore + arScore + quantScore : 0;
-    const totalAttempted = isCompleted ? varcAttempted + lrdiAttempted + arAttempted + quantAttempted : 0;
-    const accuracy = isCompleted && totalAttempted > 0 ? Number(((totalScore / totalAttempted) * 100).toFixed(1)) : 0;
-    const estPercentile = isCompleted ? Math.min(99.99, Math.max(10, Number(((totalScore / 200) * 112).toFixed(1)))) : 0;
+    const newQuote: Quote = {
+      id: Date.now(),
+      quote: newQuoteText.trim(),
+      author: newQuoteAuthor.trim() || 'FocusOS',
+      category: newQuoteCategory,
+      bgPreset: 'gold',
+      isFavorite: false
+    };
 
-    updateMockTest(selectedMock.id, {
-      name,
-      date,
-      time,
-      varcScore: isCompleted ? varcScore : 0,
-      varcAttempted: isCompleted ? varcAttempted : 0,
-      lrdiScore: isCompleted ? lrdiScore : 0,
-      lrdiAttempted: isCompleted ? lrdiAttempted : 0,
-      arScore: isCompleted ? arScore : 0,
-      arAttempted: isCompleted ? arAttempted : 0,
-      quantScore: isCompleted ? quantScore : 0,
-      quantAttempted: isCompleted ? quantAttempted : 0,
-      totalScore,
-      totalAttempted,
-      percentile: estPercentile,
-      timeTakenMinutes: isCompleted ? timeTaken : 150,
-      accuracy,
-      status,
-      remarks,
-    });
+    // Save to state
+    setAllQuotes(prev => [newQuote, ...prev]);
 
-    setIsEditOpen(false);
+    // Save to localStorage
+    try {
+      const savedCustom = localStorage.getItem('mba_cet_custom_quotes');
+      const customList: Quote[] = savedCustom ? JSON.parse(savedCustom) : [];
+      localStorage.setItem('mba_cet_custom_quotes', JSON.stringify([newQuote, ...customList]));
+    } catch (err) {}
+
+    toast.success('New motivation quote added successfully!');
+    setIsAddQuoteOpen(false);
+    setNewQuoteText('');
+    setNewQuoteAuthor('');
+
+    // Background API call if server is running
+    try {
+      fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newQuote)
+      }).catch(() => {});
+    } catch (e) {}
   };
 
-  // Completed mocks for summary metrics
-  const completedMocks = mockTests.filter(m => m.status === 'Completed');
-  const avgAttempted = completedMocks.length > 0
-    ? Math.round(completedMocks.reduce((acc, m) => acc + (m.totalAttempted ?? m.totalScore ?? 0), 0) / completedMocks.length)
-    : 0;
-  const avgScore = completedMocks.length > 0
-    ? (completedMocks.reduce((acc, m) => acc + m.totalScore, 0) / completedMocks.length).toFixed(1)
-    : '0';
-  const avgAccuracy = completedMocks.length > 0
-    ? (completedMocks.reduce((acc, m) => acc + (m.accuracy || (m.totalAttempted ? (m.totalScore / m.totalAttempted) * 100 : 80)), 0) / completedMocks.length).toFixed(1)
-    : '0';
-  const bestScore = completedMocks.length > 0
-    ? Math.max(...completedMocks.map(m => m.totalScore))
-    : 0;
+  // Filter Quotes
+  const filteredQuotes = allQuotes.filter(q => {
+    const matchesCategory = selectedCategory === 'All' 
+      ? true 
+      : selectedCategory === 'Favorites' 
+      ? q.isFavorite 
+      : q.category === selectedCategory;
+
+    const matchesSearch = q.quote.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          q.author.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesCategory && matchesSearch;
+  });
+
+  // Export Poster Canvas as 4K PNG Download
+  const downloadPosterPNG = (type: 'jbims' | 'journey') => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1920;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (type === 'journey') {
+      // Dark gold luxury journey canvas background
+      const bgGrad = ctx.createRadialGradient(960, 540, 100, 960, 540, 1000);
+      bgGrad.addColorStop(0, '#1a1610');
+      bgGrad.addColorStop(0.6, '#0a0a0a');
+      bgGrad.addColorStop(1, '#050508');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Frame
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(40, 40, 1840, 1000);
+
+      // Header: MY JOURNEY
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px system-ui, sans-serif';
+      ctx.fillText('🏆  MY JOURNEY', 100, 120);
+
+      // Node 1: 2025
+      ctx.beginPath();
+      ctx.arc(320, 420, 110, 0, Math.PI * 2);
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      ctx.fillStyle = '#3b82f6';
+      ctx.font = 'bold 32px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.attempt1Year} ${journeyData.attempt1Title}`, 320, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 68px system-ui';
+      ctx.fillText(journeyData.attempt1Score, 320, 430);
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText('Percentile', 320, 470);
+
+      // Bullets 1
+      ctx.textAlign = 'left';
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#cbd5e1';
+      journeyData.attempt1Bullets.forEach((b, i) => {
+        ctx.fillText(`• ${b}`, 210, 600 + (i * 38));
+      });
+
+      // Arrow 1 to 2
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(450, 420);
+      ctx.lineTo(680, 420);
+      ctx.stroke();
+
+      // Node 2: 2026
+      ctx.beginPath();
+      ctx.arc(800, 420, 110, 0, Math.PI * 2);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 32px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.attempt2Year} ${journeyData.attempt2Title}`, 800, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 64px system-ui';
+      ctx.fillText(journeyData.attempt2Score, 800, 430);
+      ctx.font = '24px system-ui';
+      ctx.fillStyle = '#86efac';
+      ctx.fillText('Percentile', 800, 470);
+
+      // Bullets 2
+      ctx.textAlign = 'left';
+      ctx.font = '22px system-ui';
+      ctx.fillStyle = '#cbd5e1';
+      journeyData.attempt2Bullets.forEach((b, i) => {
+        ctx.fillText(`• ${b}`, 680, 600 + (i * 38));
+      });
+
+      // Upward Diagonal Glowing Arrow to Node 3
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 10;
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.moveTo(930, 420);
+      ctx.lineTo(1380, 280);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Node 3: 2027 MISSION
+      ctx.beginPath();
+      ctx.arc(1500, 450, 130, 0, Math.PI * 2);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 36px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${journeyData.targetYear} ${journeyData.targetTitle}`, 1500, 270);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 76px system-ui';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 20;
+      ctx.fillText(journeyData.targetScore, 1500, 460);
+      ctx.shadowBlur = 0;
+      ctx.font = '26px system-ui';
+      ctx.fillStyle = '#fde047';
+      ctx.fillText('Percentile', 1500, 505);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 28px system-ui';
+      ctx.fillText(`Status: ${journeyData.targetStatus}`, 1500, 640);
+
+      // Bottom Banner Text
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 42px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(journeyData.tagline, 960, 1000);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'My_JBIMS_Journey_Roadmap_4K.png';
+      link.href = dataUrl;
+      link.click();
+
+      toast.success('My Journey 4K PNG downloaded!');
+      return;
+    }
+
+    // Default square canvas for 4K wallpaper
+    canvas.width = 1920;
+    canvas.height = 1920;
+
+    // Dark luxury gold gradient background
+    const bgGrad = ctx.createRadialGradient(960, 960, 100, 960, 960, 1200);
+    bgGrad.addColorStop(0, '#1c180a');
+    bgGrad.addColorStop(0.5, '#0d0d14');
+    bgGrad.addColorStop(1, '#050508');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1920, 1920);
+
+    // Gold Outer Frame
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(80, 80, 1760, 1760);
+
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(105, 105, 1710, 1710);
+
+    if (type === 'jbims') {
+      // Top Text: NO BACKUP PLAN
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 52px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.letterSpacing = '6px';
+      ctx.fillText('NO BACKUP PLAN', 960, 300);
+
+      // Middle Text: ONLY JBIMS
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 130px system-ui, sans-serif';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 30;
+      ctx.fillText('ONLY JBIMS', 960, 480);
+
+      // Subtitle: 99.99 PERCENTILE
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 70px system-ui, sans-serif';
+      ctx.shadowBlur = 15;
+      ctx.fillText('99.99 PERCENTILE', 960, 640);
+
+      ctx.shadowBlur = 0;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw gold frame & photo
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(480, 720, 960, 720);
+        ctx.drawImage(img, 485, 725, 950, 710);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 36px system-ui, sans-serif';
+        ctx.fillText('JAMNALAL BAJAJ INSTITUTE OF MANAGEMENT STUDIES', 960, 1530);
+        ctx.font = '28px system-ui, sans-serif';
+        ctx.fillText('CHURCHGATE CAMPUS • MUMBAI', 960, 1680);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'JBIMS_99.99_4K_Poster.png';
+        link.href = dataUrl;
+        link.click();
+        toast.success('High Resolution 4K PNG downloaded!');
+      };
+      img.onerror = () => {
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '32px system-ui, sans-serif';
+        ctx.fillText('CHURCHGATE CAMPUS • MUMBAI', 960, 1680);
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'JBIMS_99.99_4K_Poster.png';
+        link.href = dataUrl;
+        link.click();
+        toast.success('High Resolution 4K PNG downloaded!');
+      };
+      img.src = jbimsImage;
+      return;
+    }
+  };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header Banner */}
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-[22px] p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
-            <FileSpreadsheet className="w-5 h-5 text-[#FF7A00]" />
-            <span>Full Length Mock Tests Tracker</span>
+    <div className="space-y-8 pb-16">
+      {/* Top Header Banner */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-[#0a0a0a] via-[#1a162b] to-[#0a0a0a] border border-[#222222] rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#a855f7]/10 via-amber-500/5 to-transparent pointer-events-none" />
+        
+        <div className="space-y-1.5 z-10">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-bold">
+            <Flame className="w-3.5 h-3.5 fill-amber-400" />
+            <span>Target: JBIMS 99.99 Percentile</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Motivation & Daily Inspiration
           </h2>
-          <p className="text-xs text-[#A9A9A9] mt-1">
-            200 Questions • 150 Minutes • Track Questions Attempted, Total Score & Sectional Accuracy
+          <p className="text-xs sm:text-sm text-[#9494ad] max-w-2xl leading-relaxed">
+            Fuel your MBA CET preparation with daily quote rotations, custom journey roadmaps, high-definition 4K posters, and unbreakable mindset drills.
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="px-5 py-2.5 bg-gradient-to-r from-[#FF7A00] to-[#FF9E2C] text-black font-bold rounded-[14px] hover:brightness-110 text-xs flex items-center space-x-2 shadow-lg shadow-[#FF7A00]/20 active:scale-95 transition-all cursor-pointer"
-          id="mock-add-btn"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span>Add Mock Test</span>
-        </button>
-      </div>
+        <div className="flex items-center space-x-3 z-10">
+          
 
-      {/* Summary KPI Cards: Attempted vs Score vs Accuracy */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#707070] mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Completed Mocks</span>
-            <Trophy className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-black text-white font-mono">{completedMocks.length}</span>
-            <span className="text-xs text-gray-500 font-medium">/ {mockTests.length} tests</span>
-          </div>
-        </div>
-
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#707070] mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Avg Attempted</span>
-            <Target className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-black text-cyan-400 font-mono">{avgAttempted}</span>
-            <span className="text-xs text-gray-500 font-mono">/ 200 Qs</span>
-          </div>
-        </div>
-
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#707070] mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Avg Score</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-black text-emerald-400 font-mono">{avgScore}</span>
-            <span className="text-xs text-gray-500 font-mono">/ 200 Marks</span>
-          </div>
-        </div>
-
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-[#707070] mb-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Avg Accuracy</span>
-            <Percent className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-black text-amber-400 font-mono">{avgAccuracy}%</span>
-            <span className="text-[10px] text-gray-400 font-mono">(Best: {bestScore})</span>
-          </div>
+          <button
+            onClick={() => setIsAddQuoteOpen(true)}
+            className="px-4 py-2.5 bg-[#a855f7] hover:bg-[#9333ea] text-white text-xs font-bold rounded-xl flex items-center space-x-2 transition-all shadow-lg shadow-[#a855f7]/25"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Quote</span>
+          </button>
         </div>
       </div>
 
-      {/* Mocks Table with Attempted & Score */}
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-[#111111] text-[#707070] border-b border-white/5 uppercase text-[10px] font-bold tracking-wider">
-                <th className="py-2.5 px-3">Mock Name</th>
-                <th className="py-2.5 px-2 text-center">Date</th>
-                <th className="py-2.5 px-2 text-center text-[#FF7A00]/80">VARC <span className="text-[9px] font-normal text-gray-500">(50)</span></th>
-                <th className="py-2.5 px-2 text-center text-[#FFB547]/80">LRDI <span className="text-[9px] font-normal text-gray-500">(75)</span></th>
-                <th className="py-2.5 px-2 text-center text-[#F4B400]/80">AR <span className="text-[9px] font-normal text-gray-500">(25)</span></th>
-                <th className="py-2.5 px-2 text-center text-[#38E27A]/80">QA <span className="text-[9px] font-normal text-gray-500">(50)</span></th>
-                <th className="py-2.5 px-2 text-center text-cyan-400/80">Att.</th>
-                <th className="py-2.5 px-2 text-center text-emerald-400/80">Score</th>
-                <th className="py-2.5 px-2 text-center">Acc.</th>
-                <th className="py-2.5 px-2 text-center text-[#FF7A00]">Percentile</th>
-                <th className="py-2.5 px-2 text-center">Status</th>
-                <th className="py-2.5 px-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {mockTests.map(m => {
-                const totalAtt = m.totalAttempted ?? (m.status === 'Completed' ? (m.varcAttempted ?? m.varcScore) + (m.lrdiAttempted ?? m.lrdiScore) + (m.arAttempted ?? m.arScore) + (m.quantAttempted ?? m.quantScore) : 0);
-                const accuracy = m.accuracy || (totalAtt > 0 ? Number(((m.totalScore / totalAtt) * 100).toFixed(1)) : 0);
+      
+      {/* MY JOURNEY EXACT MATCH */}
+      <img
+        src={`${import.meta.env.BASE_URL}my-journey-poster.png`}
+        alt="My Journey"
+        className="w-full h-auto object-cover"
+      />
 
-                return (
-                  <tr key={m.id} className="hover:bg-[#141414]/70 transition-colors">
-                    <td className="py-2.5 px-3 font-semibold text-white">
-                      <div className="flex items-center space-x-2">
-                        <FileSpreadsheet className="w-3.5 h-3.5 text-[#FF7A00] shrink-0" />
-                        <span className="truncate max-w-[140px] sm:max-w-[180px] font-medium">{m.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-[#A9A9A9] text-[11px] whitespace-nowrap font-mono">{m.date}</td>
-                    
-                    {/* VARC */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <div className="inline-flex items-baseline space-x-0.5 font-mono text-xs">
-                          <span className="font-bold text-[#FF7A00]">{m.varcScore}</span>
-                          <span className="text-[10px] text-gray-500">/{m.varcAttempted ?? m.varcScore}</span>
-                        </div>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* LRDI */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <div className="inline-flex items-baseline space-x-0.5 font-mono text-xs">
-                          <span className="font-bold text-[#FFB547]">{m.lrdiScore}</span>
-                          <span className="text-[10px] text-gray-500">/{m.lrdiAttempted ?? m.lrdiScore}</span>
-                        </div>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* AR */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <div className="inline-flex items-baseline space-x-0.5 font-mono text-xs">
-                          <span className="font-bold text-[#F4B400]">{m.arScore}</span>
-                          <span className="text-[10px] text-gray-500">/{m.arAttempted ?? m.arScore}</span>
-                        </div>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* QUANT */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <div className="inline-flex items-baseline space-x-0.5 font-mono text-xs">
-                          <span className="font-bold text-[#38E27A]">{m.quantScore}</span>
-                          <span className="text-[10px] text-gray-500">/{m.quantAttempted ?? m.quantScore}</span>
-                        </div>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* Total Attempted */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <span className="font-bold text-cyan-400 font-mono text-xs">{totalAtt}</span>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* Total Score */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      {m.status === 'Completed' ? (
-                        <span className="font-black text-emerald-400 font-mono text-xs">{m.totalScore}</span>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* Accuracy */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap font-mono">
-                      {m.status === 'Completed' ? (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                          accuracy >= 85 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' :
-                          accuracy >= 75 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' :
-                          'bg-rose-500/15 text-rose-400 border border-rose-500/20'
-                        }`}>
-                          {accuracy}%
-                        </span>
-                      ) : <span className="text-gray-600">-</span>}
-                    </td>
-
-                    {/* Percentile */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap font-black font-mono text-[#FF7A00] text-xs">
-                      {m.status === 'Completed' ? `${m.percentile}%` : <span className="text-gray-600 font-normal">-</span>}
-                    </td>
-
-                    {/* Status */}
-                    <td className="py-2.5 px-2 text-center whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] ${
-                        m.status === 'Completed' ? 'bg-[#38E27A]/15 text-[#38E27A] border border-[#38E27A]/30' : 'bg-[#FF7A00]/15 text-[#FF7A00] border border-[#FF7A00]/30'
-                      }`}>
-                        {m.status}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end space-x-1.5">
-                        <button
-                          onClick={() => openEditModal(m)}
-                          className="p-1 text-[#707070] hover:text-white rounded-lg hover:bg-white/5 transition-colors"
-                          title="Edit Mock Test"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => deleteMockTest(m.id)}
-                          className="p-1 text-[#707070] hover:text-[#FF5A5A] rounded-lg hover:bg-white/5 transition-colors"
-                          title="Delete Mock Test"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Row 1: The Two Hero Poster Cards (Exact side-by-side as requested) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* CARD 1: JBIMS MASTER POSTER */}
+        <div>
+          {/* Poster Frame - Clean Image with Single Border */}
+          <div className="relative w-full rounded-3xl overflow-hidden border border-amber-500/60 shadow-2xl bg-black">
+            <img 
+              src={`${import.meta.env.BASE_URL}jbims-new.png`}
+              alt="JBIMS Master Poster" 
+              className="w-full h-full object-cover rounded-3xl"
+              referrerPolicy="no-referrer"
+            />
+          </div>
         </div>
+
+
+        {/* CARD 2: DAILY MOTIVATION CARD */}
+        <div>
+          <DailyMotivationWidget instanceKey="motivation" title="MOTIVATION SPOTLIGHT" defaultQuoteId={20} />
+        </div>
+
       </div>
 
-      {/* Add Modal */}
-      <Modal
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        title="Add Mock Test"
-        subtitle="Record your full length mock attempts and marks"
-      >
-        <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
+      {/* Row 2: 100+ Quotes Database Explorer Section */}
+      <div className="bg-[#0a0a0a] border border-[#222222] rounded-3xl p-6 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#222222] pb-5">
           <div>
-            <label className="block text-[#A9A9A9] mb-1 font-medium">Mock Name</label>
+            <h3 className="text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-[#a855f7]" />
+              <span>Quotes</span>
+            </h3>
+          </div>
+
+          {/* Search bar */}
+          <div className="relative w-full md:w-72">
+            <Search className="w-4 h-4 text-[#707085] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2.5 text-white focus:outline-none focus:border-[#FF7A00]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search quotes or authors..."
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:outline-none focus:border-[#a855f7]"
             />
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[#A9A9A9] mb-1 font-medium">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2 text-white"
-              />
-            </div>
+        {/* Category Pills */}
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 custom-scrollbar">
+          {['All', 'JBIMS Mindset', 'Discipline', 'Mock Grit', 'Focus & Drive', 'Belief', 'Favorites'].map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                selectedCategory === cat 
+                  ? 'bg-[#a855f7] text-white shadow-md shadow-[#a855f7]/20' 
+                  : 'bg-[#0a0a0a] text-[#707085] hover:text-white border border-[#222222]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
-            <div>
-              <label className="block text-[#A9A9A9] mb-1 font-medium">Status</label>
-              <select
-                value={status}
-                onChange={(e: any) => setStatus(e.target.value)}
-                className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2 text-white"
-              >
-                <option value="Completed">Completed</option>
-                <option value="Upcoming">Upcoming</option>
-              </select>
+        {/* Quotes Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredQuotes.map(q => (
+            <div 
+              key={q.id}
+              className="bg-[#0a0a0a] border border-[#222222] hover:border-[#a855f7]/40 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#1a1a1a] text-amber-400 border border-amber-500/20">
+                    {q.category}
+                  </span>
+                  <button
+                    onClick={() => handleToggleFavorite(q.id)}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      q.isFavorite ? 'text-amber-400' : 'text-[#707085] group-hover:text-white'
+                    }`}
+                  >
+                    <Bookmark className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+                  "{q.quote}"
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#222222] flex items-center justify-between text-xs">
+                <span className="text-[#707085] font-bold">— {q.author}</span>
+                
+                <div className="flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => handleCopyQuote(q.quote, q.author)}
+                    className="p-1.5 rounded-lg text-[#707085] hover:text-white hover:bg-[#141414]"
+                    title="Copy Quote"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+
+
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+      </div>
+
+      
+
+
+
+      {/* Modal: Add Custom Quote to Backend */}
+      <Modal
+        isOpen={isAddQuoteOpen}
+        onClose={() => setIsAddQuoteOpen(false)}
+        title="Add Motivation Quote to Backend"
+      >
+        <form onSubmit={handleAddCustomQuote} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-[#707085] mb-1 font-medium">Quote Text</label>
+            <textarea
+              required
+              rows={3}
+              value={newQuoteText}
+              onChange={(e) => setNewQuoteText(e.target.value)}
+              placeholder="e.g. JBIMS Churchgate is won in the quiet hours of relentless practice."
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl p-3 text-white focus:outline-none focus:border-[#a855f7]"
+            />
           </div>
-
-          {status === 'Completed' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-[11px] text-gray-400 font-semibold px-1">
-                <span>Sectional Performance (Attempted vs Score)</span>
-                <span className="text-[#FF7A00]">Max: 200 Qs</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#111111] p-3.5 rounded-2xl border border-white/5">
-                {/* VARC */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#FF7A00] font-bold text-[11px]">VARC (Max 50)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={varcAttempted}
-                      onChange={(e) => setVarcAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={varcAttempted || 50}
-                      value={varcScore}
-                      onChange={(e) => setVarcScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* LRDI */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#FFB547] font-bold text-[11px]">LRDI (Max 75)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={75}
-                      value={lrdiAttempted}
-                      onChange={(e) => setLrdiAttempted(Math.min(75, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={lrdiAttempted || 75}
-                      value={lrdiScore}
-                      onChange={(e) => setLrdiScore(Math.min(75, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* AR */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#F4B400] font-bold text-[11px]">AR (Max 25)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={25}
-                      value={arAttempted}
-                      onChange={(e) => setArAttempted(Math.min(25, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={arAttempted || 25}
-                      value={arScore}
-                      onChange={(e) => setArScore(Math.min(25, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-
-                {/* QUANT */}
-                <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                  <span className="block text-[#38E27A] font-bold text-[11px]">QUANT (Max 50)</span>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Attempted</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={quantAttempted}
-                      onChange={(e) => setQuantAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={quantAttempted || 50}
-                      value={quantScore}
-                      onChange={(e) => setQuantScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                      className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Real-time Summary Card inside modal */}
-              <div className="p-3 bg-[#0a0a0a] border border-cyan-500/20 rounded-xl grid grid-cols-4 gap-2 text-center">
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Attempted</span>
-                  <span className="text-sm font-bold text-cyan-400 font-mono">{currentTotalAttempted}/200</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Total Score</span>
-                  <span className="text-sm font-bold text-emerald-400 font-mono">{currentTotalScore}/200</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Accuracy</span>
-                  <span className="text-sm font-bold text-amber-400 font-mono">{currentAccuracy}%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-gray-400 block font-medium">Est. %ile</span>
-                  <span className="text-sm font-bold text-[#FF7A00] font-mono">{currentEstPercentile}%</span>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div>
-            <label className="block text-[#A9A9A9] mb-1 font-medium">Remarks / Key Learnings</label>
-            <textarea
-              rows={2}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              placeholder="e.g. Strong in puzzles, missed 15 quant questions due to time..."
-              className="w-full bg-[#111111] border border-white/10 rounded-[16px] p-3 text-white focus:outline-none focus:border-[#FF7A00]"
+            <label className="block text-[#707085] mb-1 font-medium">Author / Tag</label>
+            <input
+              type="text"
+              value={newQuoteAuthor}
+              onChange={(e) => setNewQuoteAuthor(e.target.value)}
+              placeholder="e.g. Churchgate Legend or FocusOS"
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-[#a855f7]"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-3 border-t border-white/5">
-            <button type="button" onClick={() => setIsAddOpen(false)} className="px-4 py-2 text-[#A9A9A9] hover:text-white">Cancel</button>
-            <button type="submit" className="px-5 py-2 bg-[#FF7A00] text-black font-bold rounded-[14px] hover:bg-[#FFB547] transition-all">Save Mock</button>
+          <div>
+            <label className="block text-[#707085] mb-1 font-medium">Category</label>
+            <select
+              value={newQuoteCategory}
+              onChange={(e: any) => setNewQuoteCategory(e.target.value)}
+              className="w-full bg-[#0a0a0a] border border-[#222222] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#a855f7]"
+            >
+              <option value="JBIMS Mindset">JBIMS Mindset</option>
+              <option value="Discipline">Discipline</option>
+              <option value="Mock Grit">Mock Grit</option>
+              <option value="Focus & Drive">Focus & Drive</option>
+              <option value="Belief">Belief</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-3 border-t border-[#222222]">
+            <button
+              type="button"
+              onClick={() => setIsAddQuoteOpen(false)}
+              className="px-4 py-2 text-[#707085] hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-[#a855f7] text-white font-bold rounded-xl hover:bg-[#9333ea] transition-colors"
+            >
+              Save Quote to Backend
+            </button>
           </div>
         </form>
       </Modal>
-
-      {/* Edit Modal */}
-      {selectedMock && (
-        <Modal
-          isOpen={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
-          title="Edit Mock Test"
-          subtitle={`Editing ${selectedMock.name}`}
-        >
-          <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-[#A9A9A9] mb-1 font-medium">Mock Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2.5 text-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[#A9A9A9] mb-1 font-medium">Date</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#A9A9A9] mb-1 font-medium">Status</label>
-                <select
-                  value={status}
-                  onChange={(e: any) => setStatus(e.target.value)}
-                  className="w-full bg-[#111111] border border-white/10 rounded-[16px] px-3.5 py-2 text-white"
-                >
-                  <option value="Completed">Completed</option>
-                  <option value="Upcoming">Upcoming</option>
-                </select>
-              </div>
-            </div>
-
-            {status === 'Completed' && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[11px] text-gray-400 font-semibold px-1">
-                  <span>Sectional Performance (Attempted vs Score)</span>
-                  <span className="text-[#FF7A00]">Max: 200 Qs</span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-[#111111] p-3.5 rounded-2xl border border-white/5">
-                  {/* VARC */}
-                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                    <span className="block text-[#FF7A00] font-bold text-[11px]">VARC (Max 50)</span>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Attempted</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={50}
-                        value={varcAttempted}
-                        onChange={(e) => setVarcAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={varcAttempted || 50}
-                        value={varcScore}
-                        onChange={(e) => setVarcScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* LRDI */}
-                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                    <span className="block text-[#FFB547] font-bold text-[11px]">LRDI (Max 75)</span>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Attempted</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={75}
-                        value={lrdiAttempted}
-                        onChange={(e) => setLrdiAttempted(Math.min(75, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={lrdiAttempted || 75}
-                        value={lrdiScore}
-                        onChange={(e) => setLrdiScore(Math.min(75, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* AR */}
-                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                    <span className="block text-[#F4B400] font-bold text-[11px]">AR (Max 25)</span>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Attempted</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={25}
-                        value={arAttempted}
-                        onChange={(e) => setArAttempted(Math.min(25, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={arAttempted || 25}
-                        value={arScore}
-                        onChange={(e) => setArScore(Math.min(25, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                  </div>
-
-                  {/* QUANT */}
-                  <div className="space-y-1.5 p-2 rounded-xl bg-black/40 border border-white/5">
-                    <span className="block text-[#38E27A] font-bold text-[11px]">QUANT (Max 50)</span>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Attempted</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={50}
-                        value={quantAttempted}
-                        onChange={(e) => setQuantAttempted(Math.min(50, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-cyan-400 font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-[10px]">Score / Marks</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={quantAttempted || 50}
-                        value={quantScore}
-                        onChange={(e) => setQuantScore(Math.min(50, Math.max(0, Number(e.target.value))))}
-                        className="w-full bg-[#0a0a0a] p-1.5 text-center rounded-lg text-white font-mono font-bold text-xs border border-white/5"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Real-time Summary Card inside modal */}
-                <div className="p-3 bg-[#0a0a0a] border border-cyan-500/20 rounded-xl grid grid-cols-4 gap-2 text-center">
-                  <div>
-                    <span className="text-[10px] text-gray-400 block font-medium">Attempted</span>
-                    <span className="text-sm font-bold text-cyan-400 font-mono">{currentTotalAttempted}/200</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block font-medium">Total Score</span>
-                    <span className="text-sm font-bold text-emerald-400 font-mono">{currentTotalScore}/200</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block font-medium">Accuracy</span>
-                    <span className="text-sm font-bold text-amber-400 font-mono">{currentAccuracy}%</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-gray-400 block font-medium">Est. %ile</span>
-                    <span className="text-sm font-bold text-[#FF7A00] font-mono">{currentEstPercentile}%</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-[#A9A9A9] mb-1 font-medium">Remarks</label>
-              <textarea
-                rows={2}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                className="w-full bg-[#111111] border border-white/10 rounded-[16px] p-3 text-white"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-3 border-t border-white/5">
-              <button type="button" onClick={() => setIsEditOpen(false)} className="px-4 py-2 text-[#A9A9A9] hover:text-white">Cancel</button>
-              <button type="submit" className="px-5 py-2 bg-[#FF7A00] text-black font-bold rounded-[14px] hover:bg-[#FFB547]">Update Mock</button>
-            </div>
-          </form>
-        </Modal>
-      )}
     </div>
   );
 };
