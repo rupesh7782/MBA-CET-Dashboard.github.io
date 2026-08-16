@@ -552,7 +552,7 @@ export const MotivationView: React.FC = () => {
           {/* Poster Frame - Clean Image with Single Border */}
           <div className="relative w-full rounded-3xl overflow-hidden border border-amber-500/60 shadow-2xl bg-black">
             <img 
-              src={`${import.meta.env.BASE_URL}jbims-new.jpg`}
+              src={`${import.meta.env.BASE_URL}jbims-new.png`}
               alt="JBIMS Master Poster" 
               className="w-full h-full object-cover rounded-3xl"
               referrerPolicy="no-referrer"
